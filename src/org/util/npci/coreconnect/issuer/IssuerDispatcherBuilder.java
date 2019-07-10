@@ -12,10 +12,10 @@ public abstract class IssuerDispatcherBuilder {
 	
 	public abstract IssuerDispatcher build(CoreConfig coreConfig);
 	
-	public static final IssuerDispatcher getIssuerDispatcher(final CoreConfig coreConfig) {
+	public static final IssuerDispatcher getIssuerDispatcher(final CoreConfig config) {
 		final ServiceLoader<IssuerDispatcherBuilder> serviceLoader = ServiceLoader.load(IssuerDispatcherBuilder.class, IssuerDispatcherBuilder.class.getClassLoader());
 		for (IssuerDispatcherBuilder builder : serviceLoader) {
-			if(builder.getDispatcherTypes().contains(coreConfig.dispatcherType)) return builder.build(coreConfig);
+			if(builder.getDispatcherTypes().contains(config.dispatcherType)) return builder.build(config);
 		}
 		return null;
 	}
