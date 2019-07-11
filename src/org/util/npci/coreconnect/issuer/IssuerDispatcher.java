@@ -6,15 +6,13 @@ import org.util.npci.coreconnect.CoreConfig;
 public abstract class IssuerDispatcher {
 
 	public final CoreConfig config;
-	
+
 	public abstract String getName();
-	
+
 	public abstract String dispatch(final ISO8583Message request);
-	
+
 	public IssuerDispatcher(CoreConfig config) {
 		this.config = config;
 	}
-	
-	
-	
+
 }
