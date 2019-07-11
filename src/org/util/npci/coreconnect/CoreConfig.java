@@ -1,12 +1,24 @@
 package org.util.npci.coreconnect;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.util.nanolog.LogWriter;
 import org.util.nanolog.Logger;
 import org.util.nanolog.LoggerType;
 import org.util.npci.api.ConfigurationNotFoundException;
+import org.util.npci.api.model.AcquirerConfig;
 import org.util.npci.api.model.BankConfig;
+import org.util.npci.coreconnect.acquirer.AcquirerServer;
+import org.util.npci.coreconnect.acquirer.AcquirerServerBuilder;
 import org.util.npci.coreconnect.issuer.IssuerDispatcher;
 import org.util.npci.coreconnect.issuer.IssuerDispatcherBuilder;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 public final class CoreConfig extends BankConfig {
 
@@ -15,15 +27,30 @@ public final class CoreConfig extends BankConfig {
 	public final LogWriter issWriter;
 	public final LogWriter acqWriter;
 	public final Logger    coreLogger;
+	
+	public final Schedular schedular;
 	public final IssuerDispatcher dispatcher;
-
+	public final HikariDataSource dataSource;
+	public final List<AcquirerServer> acquirers;
+	
 	public CoreConfig(final BankConfig bankConfig) throws ConfigurationNotFoundException {
 		super(bankConfig);
 		issWriter  = new LogWriter(bankConfig.bankId, "issuer_tx", true);
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
 		coreLogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
+		
+		schedular = new Schedular(this);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
-
+		dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
+		acquirers = Collections.unmodifiableList(getAcquirerServerList());
 	}
 
+	
+	private final List<AcquirerServer> getAcquirerServerList() throws ConfigurationNotFoundException {
+		final List<AcquirerServer> acquirers = new ArrayList<AcquirerServer>();
+		for (AcquirerConfig acquirerConfig : acquirerConfigs) {
+			acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig.acquirerType, this));
+		}
+		return acquirers;
+	}
 }

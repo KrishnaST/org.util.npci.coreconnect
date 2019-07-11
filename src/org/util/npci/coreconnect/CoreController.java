@@ -6,28 +6,25 @@ import org.util.npci.api.model.BankConfig;
 
 public final class CoreController extends BankController {
 
-	private final CoreConfig coreConfig;
+	private final CoreConfig config;
 
-	public CoreController(final BankConfig bankConfig) throws ConfigurationNotFoundException {
-		this.coreConfig = new CoreConfig(bankConfig);
+	public CoreController(final BankConfig config) throws ConfigurationNotFoundException {
+		this.config = new CoreConfig(config);
 	}
 
 	@Override
 	public boolean shutdown() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean isAlive() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public BankConfig getConfig() {
-		// TODO Auto-generated method stub
-		return null;
+	public final BankConfig getConfig() {
+		return config;
 	}
 
 }
