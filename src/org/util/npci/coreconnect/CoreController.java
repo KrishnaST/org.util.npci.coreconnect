@@ -24,8 +24,7 @@ public final class CoreController extends BankController {
 		return false;
 	}
 
-	@Override
-	public final boolean isAlive() {
+	public final boolean isActive() {
 		return config.coreconnect.isAlive();
 	}
 
@@ -41,5 +40,6 @@ public final class CoreController extends BankController {
 		} catch (Exception e) {}
 		return false;
 	}
+
 
 }
