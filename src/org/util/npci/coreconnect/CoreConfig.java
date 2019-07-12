@@ -2,9 +2,7 @@ package org.util.npci.coreconnect;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.util.nanolog.LogWriter;
 import org.util.nanolog.Logger;
@@ -32,6 +30,7 @@ public final class CoreConfig extends BankConfig {
 	public final IssuerDispatcher dispatcher;
 	public final HikariDataSource dataSource;
 	public final List<AcquirerServer> acquirers;
+	public final CoreConnect coreconnect;
 	
 	public CoreConfig(final BankConfig bankConfig) throws ConfigurationNotFoundException {
 		super(bankConfig);
@@ -43,6 +42,7 @@ public final class CoreConfig extends BankConfig {
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
 		dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
 		acquirers = Collections.unmodifiableList(getAcquirerServerList());
+		coreconnect = new CoreConnect(this);
 	}
 
 	
