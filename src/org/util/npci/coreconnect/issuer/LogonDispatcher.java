@@ -22,7 +22,7 @@ public class LogonDispatcher extends IssuerDispatcher {
 	}
 
 	@Override
-	public final boolean dispatch(ISO8583Message request) {
+	public boolean dispatch(ISO8583Message request) {
 		if(MTI.NET_MGMT_REQUEST.equals(request.get(0))) {
 			if(logonTypes.contains(request.get(70))) {
 				return config.schedular.execute(new IssuerLogon(request, this));
