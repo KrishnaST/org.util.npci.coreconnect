@@ -34,12 +34,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	public final CoreConfig config;
 	public final Logger     logger;
-	public final Schedular  schedular;
 
 	public CoreConnect(CoreConfig config) {
 		this.config = config;
-		logger      = config.coreLogger;
-		schedular   = config.schedular;
+		logger      = config.corelogger;
 		npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
 	}
 

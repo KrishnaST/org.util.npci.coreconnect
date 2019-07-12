@@ -24,7 +24,7 @@ public final class CoreConfig extends BankConfig {
 
 	public final LogWriter issWriter;
 	public final LogWriter acqWriter;
-	public final Logger    coreLogger;
+	public final Logger    corelogger;
 	
 	public final Schedular schedular;
 	public final IssuerDispatcher dispatcher;
@@ -36,7 +36,7 @@ public final class CoreConfig extends BankConfig {
 		super(bankConfig);
 		issWriter  = new LogWriter(bankConfig.bankId, "issuer_tx", true);
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
-		coreLogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
+		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
 		
 		schedular = new Schedular(this);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
