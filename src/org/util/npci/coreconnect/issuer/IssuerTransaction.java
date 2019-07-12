@@ -16,9 +16,9 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 	protected final ISO8583Message request;
 	protected final T              dispatcher;
 
-	public IssuerTransaction(final ISO8583Message request, final T t) {
+	public IssuerTransaction(final ISO8583Message request, final T dispatcher) {
 		this.request    = request;
-		this.dispatcher = t;
+		this.dispatcher = dispatcher;
 	}
 
 	protected abstract void execute(final Logger logger);

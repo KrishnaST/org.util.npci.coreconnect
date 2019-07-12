@@ -35,8 +35,9 @@ public final class Schedular implements ShutDownable {
 		return schedular.scheduleAtFixedRate(runnable, initialDelay, delay, unit);
 	}
 	
-	public final void execute(Runnable runnable) {
+	public final boolean execute(Runnable runnable) {
 		executor.execute(runnable);
+		return true;
 	}
 	
 	public final Future<?> submit(Runnable runnable) {

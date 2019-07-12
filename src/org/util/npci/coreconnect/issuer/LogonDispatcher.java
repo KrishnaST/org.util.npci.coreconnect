@@ -1,10 +1,16 @@
 package org.util.npci.coreconnect.issuer;
 
+import java.util.List;
+
 import org.util.iso8583.ISO8583Message;
+import org.util.iso8583.npci.LogonType;
+import org.util.iso8583.npci.MTI;
 import org.util.npci.coreconnect.CoreConfig;
 
 public class LogonDispatcher extends IssuerDispatcher {
 
+	private final List<String> logonTypes = List.of(LogonType.LOGON, LogonType.ECHO_LOGON, LogonType.LOGOFF);
+	
 	public LogonDispatcher(CoreConfig config) {
 		super(config);
 
@@ -17,6 +23,11 @@ public class LogonDispatcher extends IssuerDispatcher {
 
 	@Override
 	public final boolean dispatch(ISO8583Message request) {
+		if(MTI.NET_MGMT_REQUEST.equals(request.get(0))) {
+			if(logonTypes.contains(request.get(70))) {
+				return config.schedular.execute(new IssuerLogon(request, this));
+			}
+		}
 		return false;
 	}
 
