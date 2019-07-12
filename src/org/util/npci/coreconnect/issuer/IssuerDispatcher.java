@@ -13,7 +13,7 @@ public abstract class IssuerDispatcher {
 	
 	public abstract String getName();
 
-	public abstract String dispatch(final ISO8583Message request);
+	public abstract boolean dispatch(final ISO8583Message request);
 
 	
 

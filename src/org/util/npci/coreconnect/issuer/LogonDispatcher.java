@@ -16,8 +16,8 @@ public class LogonDispatcher extends IssuerDispatcher {
 	}
 
 	@Override
-	public final String dispatch(ISO8583Message request) {
-		return null;
+	public final boolean dispatch(ISO8583Message request) {
+		return false;
 	}
 
 }

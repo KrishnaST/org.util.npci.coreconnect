@@ -183,15 +183,15 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		return false;
 	}
 
-	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, Logger logger, int timeoutInMs) {
+	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, final Logger logger, final int timeoutInMs) {
 		try {
-			final String requestKey =  request.getUniqueKey();
+			final String requestKey = request.getUniqueKey();
 			logger.trace("request key : " + requestKey);
 			final Locker<ISO8583Message> locker = new Locker<>(request);
 			tranmap.put(requestKey, locker);
-			final byte[] bytes = EncoderDecoder.encode(npciFormat, request);
+			final byte[]  bytes  = EncoderDecoder.encode(npciFormat, request);
 			final boolean isSent = send(bytes, logger);
-			if(isSent) {
+			if (isSent) {
 				logger.info("waiting started for : " + timeoutInMs);
 				synchronized (locker) {
 					try {
@@ -203,12 +203,14 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				logger.trace("waiting finished");
 			}
 			tranmap.remove(requestKey);
-			if(locker.response == null) {
+			if (locker.response == null) {
 				locker.response = request.copy();
 				locker.response.put(39, ResponseCode.ISSUER_INOPERATIVE);
 			}
 			return locker.response;
-		} catch (Exception e) {logger.error(e);}
+		} catch (Exception e) {
+			logger.error(e);
+		}
 		final ISO8583Message response = request.copy();
 		response.put(39, ResponseCode.SYSTEM_MALFUNCTION);
 		return response;
@@ -227,9 +229,18 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				locker.notify();
 			}
 			return true;
-		} catch (Exception e) {logger.error(e);}
+		} catch (Exception e) {
+			logger.error(e);
+		}
 		return false;
 	}
 
-	
+	public final boolean sendResponseToNPCI(final ISO8583Message response, final Logger logger) {
+		try {
+			byte[] bytes = EncoderDecoder.encode(npciFormat, response);
+			final boolean isSent = send(bytes, logger);
+			return isSent;
+		} catch (Exception e) {logger.info(e);}
+		return false;
+	}
 }
