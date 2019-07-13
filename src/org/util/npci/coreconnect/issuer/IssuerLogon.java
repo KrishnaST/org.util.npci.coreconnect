@@ -36,7 +36,8 @@ public final class IssuerLogon extends IssuerTransaction<IssuerDispatcher> {
 			request.put(0, MTI.NET_MGMT_RESPONSE);
 			request.put(39, "00");
 			logger.info("logon response : "+EncoderDecoder.log(request));
-			coreconnect.sendResponseToNPCI(request, logger);
+			final boolean isSent = coreconnect.sendResponseToNPCI(request, logger);
+			logger.info("isSent : "+isSent);
 		} catch (Exception e) {logger.info(e);}
 		
 	}

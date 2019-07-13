@@ -41,7 +41,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
 	}
 
-	public void run() {
+	public final void run() {
 		setStatus(Status.NEW);
 		while (Status.SHUTDOWN != status.get()) {
 			try {
@@ -69,7 +69,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		logger.info("shutting down npci connector : " + config.bankId);
 	}
 
-	private final synchronized boolean send(byte[] bytes, Logger logger) {
+	private final boolean send(byte[] bytes, Logger logger) {
 		try {
 			if (socketStatus.get()) {
 				logger.trace("writing : " + ByteHexUtil.byteToHex(bytes));
@@ -85,7 +85,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		return false;
 	}
 
-	private synchronized final byte[] receive() {
+	private final byte[] receive() {
 		if (Status.SHUTDOWN != status.get()) {
 			byte[] bytes = null;
 			try {
@@ -239,9 +239,8 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		try {
 			byte[]        bytes  = EncoderDecoder.encode(npciFormat, response);
 			final boolean isSent = send(bytes, logger);
-			logger.trace("sent : " + isSent);
 			return isSent;
-		} catch (Exception e) {logger.error(e);}
+		} catch (Exception e) {e.printStackTrace();logger.error(e);}
 		return false;
 	}
 }
