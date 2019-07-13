@@ -10,7 +10,7 @@ public final class CoreController extends BankController {
 	private final CoreConfig config;
 
 	public CoreController(final BankConfig config) throws ConfigurationNotFoundException {
-		this.config = new CoreConfig(config);
+		this.config = new CoreConfig(config, this);
 	}
 
 	@Override
