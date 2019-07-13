@@ -40,10 +40,15 @@ public final class CoreConfig extends BankConfig {
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
 		
 		schedular = new Schedular(this);
+		corelogger.info("schedular initialized : "+schedular);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
+		corelogger.info("dispatcher initialized : "+dispatcher);
 		dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
+		corelogger.info("dataSource initialized : "+dataSource);
 		acquirers = Collections.unmodifiableList(getAcquirerServerList());
+		corelogger.info("acquirers initialized : "+acquirers);
 		coreconnect = new CoreConnect(this);
+		corelogger.info("coreconnect initialized : "+coreconnect);
 	}
 
 	

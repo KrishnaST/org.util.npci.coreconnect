@@ -5,7 +5,7 @@ import org.util.npci.api.ConfigurationNotFoundException;
 import org.util.npci.api.model.BankConfig;
 import org.util.npci.coreconnect.acquirer.AcquirerServer;
 
-public final class CoreController extends BankController {
+public final class CoreController implements BankController {
 
 	private final CoreConfig config;
 
@@ -39,6 +39,17 @@ public final class CoreController extends BankController {
 			return true;
 		} catch (Exception e) {}
 		return false;
+	}
+
+	@Override
+	public final void start() {
+		final String bankId = config.bankId;
+		for (AcquirerServer server : config.acquirers) {
+			config.corelogger.info(bankId+ " : starting acquirer server "+server.getServerType());
+			server.start();
+		}
+		config.corelogger.info(bankId+ " : starting coreconnect");
+		config.coreconnect.start();
 	}
 
 

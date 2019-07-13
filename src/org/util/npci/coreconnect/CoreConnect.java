@@ -71,7 +71,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	private final synchronized boolean send(byte[] bytes, Logger logger) {
 		try {
-			if ((Status.NEW == status.get() || Status.LOGGEDON == status.get()) && socketStatus.get()) {
+			if (socketStatus.get()) {
 				logger.trace("writing : " + ByteHexUtil.byteToHex(bytes));
 				os.write(bytes);
 				os.flush();
@@ -237,10 +237,11 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	public final boolean sendResponseToNPCI(final ISO8583Message response, final Logger logger) {
 		try {
-			byte[] bytes = EncoderDecoder.encode(npciFormat, response);
+			byte[]        bytes  = EncoderDecoder.encode(npciFormat, response);
 			final boolean isSent = send(bytes, logger);
+			logger.trace("sent : " + isSent);
 			return isSent;
-		} catch (Exception e) {logger.info(e);}
+		} catch (Exception e) {logger.error(e);}
 		return false;
 	}
 }
