@@ -15,6 +15,6 @@ public abstract class IssuerDispatcherBuilder {
 	public static final IssuerDispatcher getIssuerDispatcher(final CoreConfig config) throws ConfigurationNotFoundException {
 		final ServiceLoader<IssuerDispatcherBuilder> serviceLoader = ServiceLoader.load(IssuerDispatcherBuilder.class, IssuerDispatcherBuilder.class.getClassLoader());
 		for (IssuerDispatcherBuilder builder : serviceLoader) { if (builder.getDispatcherTypes().contains(config.dispatcherType)) return builder.build(config); }
-		throw new ConfigurationNotFoundException("could not find dispatcher with name : "+config.dispatcherType);
+		throw new ConfigurationNotFoundException("could not find dispatcher with name : " + config.dispatcherType);
 	}
 }

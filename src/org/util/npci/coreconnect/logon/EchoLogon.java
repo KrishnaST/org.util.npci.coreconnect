@@ -13,7 +13,6 @@ import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConfig;
 import org.util.npci.coreconnect.acquirer.AcquirerTransaction;
 
-
 public final class EchoLogon extends AcquirerTransaction {
 
 	public EchoLogon(CoreConfig config) {

@@ -25,37 +25,34 @@ public final class CoreConfig extends BankConfig {
 	public final LogWriter issWriter;
 	public final LogWriter acqWriter;
 	public final Logger    corelogger;
-	
-	public final Schedular schedular;
-	public final IssuerDispatcher dispatcher;
-	public final HikariDataSource dataSource;
+
+	public final Schedular            schedular;
+	public final IssuerDispatcher     dispatcher;
+	public final HikariDataSource     dataSource;
 	public final List<AcquirerServer> acquirers;
-	public final CoreConnect coreconnect;
-	
+	public final CoreConnect          coreconnect;
+
 	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws Exception {
 		super(bankConfig, controller);
 		issWriter  = new LogWriter(bankConfig.bankId, "issuer_tx", true);
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
-		
+
 		schedular = new Schedular(this);
-		corelogger.info("schedular initialized : "+schedular);
+		corelogger.info("schedular initialized : " + schedular);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
-		corelogger.info("dispatcher initialized : "+dispatcher);
+		corelogger.info("dispatcher initialized : " + dispatcher);
 		dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
-		corelogger.info("dataSource initialized : "+dataSource);
+		corelogger.info("dataSource initialized : " + dataSource);
 		acquirers = Collections.unmodifiableList(getAcquirerServerList());
-		corelogger.info("acquirers initialized : "+acquirers);
+		corelogger.info("acquirers initialized : " + acquirers);
 		coreconnect = new CoreConnect(this);
-		corelogger.info("coreconnect initialized : "+coreconnect);
+		corelogger.info("coreconnect initialized : " + coreconnect);
 	}
 
-	
 	private final List<AcquirerServer> getAcquirerServerList() throws Exception {
 		final List<AcquirerServer> acquirers = new ArrayList<AcquirerServer>();
-		for (AcquirerConfig acquirerConfig : acquirerConfigs) {
-			acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this));
-		}
+		for (AcquirerConfig acquirerConfig : acquirerConfigs) { acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this)); }
 		return acquirers;
 	}
 }

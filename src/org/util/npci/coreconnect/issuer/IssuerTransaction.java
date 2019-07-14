@@ -28,6 +28,8 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 			logger.info("issuer request ", new ISO8583LogSupplier(request));
 			execute(logger);
 			logger.info(new ISO8583LogSupplier(request));
-		} catch (Exception e) {Logger.console(e);}
+		} catch (Exception e) {
+			Logger.console(e);
+		}
 	}
 }

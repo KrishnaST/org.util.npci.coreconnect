@@ -40,7 +40,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		this.config = config;
 		logger      = config.corelogger;
 		npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
-		setName(config.bankId+"-coreconnect");
+		setName(config.bankId + "-coreconnect");
 	}
 
 	public final void run() {
@@ -244,7 +244,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			byte[]        bytes  = EncoderDecoder.encode(npciFormat, response);
 			final boolean isSent = send(bytes, logger);
 			return isSent;
-		} catch (Exception e) {e.printStackTrace();logger.error(e);}
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error(e);
+		}
 		return false;
 	}
 }

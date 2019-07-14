@@ -72,12 +72,12 @@ public final class CoreController implements BankController {
 
 	@Override
 	public final void action(String action, Object... objects) {
-		config.corelogger.info("action : "+action);
-		if("logon".equals(action)) config.schedular.execute(new Logon(config));
-		else if("echo-logon".equals(action)) config.schedular.execute(new EchoLogon(config));
-		else if("logoff".equals(action)) config.schedular.execute(new Logoff(config));
-		else if("key-exchange".equals(action)) config.schedular.execute(new ZPKRequest(config));
-		else if("toggle-console".equals(action)) Logger.setConsoleStatus(Logger.getConsoleStatus() ^ true);
+		config.corelogger.info("action : " + action);
+		if ("logon".equals(action)) config.schedular.execute(new Logon(config));
+		else if ("echo-logon".equals(action)) config.schedular.execute(new EchoLogon(config));
+		else if ("logoff".equals(action)) config.schedular.execute(new Logoff(config));
+		else if ("key-exchange".equals(action)) config.schedular.execute(new ZPKRequest(config));
+		else if ("toggle-console".equals(action)) Logger.setConsoleStatus(Logger.getConsoleStatus() ^ true);
 	}
 
 }

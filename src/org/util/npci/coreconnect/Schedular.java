@@ -34,16 +34,16 @@ public final class Schedular implements ShutDownable {
 	public final ScheduledFuture<?> scheduleAtFixedRate(final Runnable runnable, final long initialDelay, final long delay, final TimeUnit unit) {
 		return schedular.scheduleAtFixedRate(runnable, initialDelay, delay, unit);
 	}
-	
+
 	public final boolean execute(Runnable runnable) {
 		executor.execute(runnable);
 		return true;
 	}
-	
+
 	public final Future<?> submit(Runnable runnable) {
 		return executor.submit(runnable);
 	}
-	
+
 	@Override
 	public final boolean shutdown() {
 		try {

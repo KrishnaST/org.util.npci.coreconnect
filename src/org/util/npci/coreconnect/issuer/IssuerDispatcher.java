@@ -11,11 +11,9 @@ public abstract class IssuerDispatcher implements ShutDownable {
 	public IssuerDispatcher(CoreConfig config) {
 		this.config = config;
 	}
-	
+
 	public abstract String getName();
 
 	public abstract boolean dispatch(final ISO8583Message request);
-
-	
 
 }
