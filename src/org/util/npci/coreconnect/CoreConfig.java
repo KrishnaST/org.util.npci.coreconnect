@@ -45,7 +45,7 @@ public final class CoreConfig extends BankConfig {
 		dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
 		corelogger.info("dataSource initialized : " + dataSource);
 		acquirers = Collections.unmodifiableList(getAcquirerServerList());
-		corelogger.info("acquirers initialized : " + acquirers);
+		corelogger.info("acquirers initialized : " + acquirers.size());
 		coreconnect = new CoreConnect(this);
 		corelogger.info("coreconnect initialized : " + coreconnect);
 	}
