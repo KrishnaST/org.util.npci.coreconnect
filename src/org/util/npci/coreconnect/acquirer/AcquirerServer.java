@@ -18,8 +18,4 @@ public abstract class AcquirerServer extends Thread implements ShutDownable {
 	public abstract void run();
 	
 	public abstract String getServerType();
-
-
-	
-
 }
