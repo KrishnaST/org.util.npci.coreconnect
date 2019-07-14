@@ -8,7 +8,6 @@ import org.util.nanolog.LogWriter;
 import org.util.nanolog.Logger;
 import org.util.nanolog.LoggerType;
 import org.util.npci.api.BankController;
-import org.util.npci.api.ConfigurationNotFoundException;
 import org.util.npci.api.model.AcquirerConfig;
 import org.util.npci.api.model.BankConfig;
 import org.util.npci.coreconnect.acquirer.AcquirerServer;
@@ -33,7 +32,7 @@ public final class CoreConfig extends BankConfig {
 	public final List<AcquirerServer> acquirers;
 	public final CoreConnect coreconnect;
 	
-	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws ConfigurationNotFoundException {
+	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws Exception {
 		super(bankConfig, controller);
 		issWriter  = new LogWriter(bankConfig.bankId, "issuer_tx", true);
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
@@ -52,7 +51,7 @@ public final class CoreConfig extends BankConfig {
 	}
 
 	
-	private final List<AcquirerServer> getAcquirerServerList() throws ConfigurationNotFoundException {
+	private final List<AcquirerServer> getAcquirerServerList() throws Exception {
 		final List<AcquirerServer> acquirers = new ArrayList<AcquirerServer>();
 		for (AcquirerConfig acquirerConfig : acquirerConfigs) {
 			acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this));

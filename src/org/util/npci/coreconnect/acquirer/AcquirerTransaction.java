@@ -25,11 +25,8 @@ public abstract class AcquirerTransaction implements Runnable {
 	@Override
 	public final void run() {
 		try (Logger logger = Logger.getLogger(LoggerType.BUFFERED, config.issWriter)) {
-			logger.info("issuer class : " + getClass().getName());
 			execute(logger);
-		} catch (Exception e) {
-			config.corelogger.error(e);
-		}
+		} catch (Exception e) {config.corelogger.error(e);}
 	}
 
 }

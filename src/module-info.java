@@ -14,6 +14,7 @@ module org.util.npci.coreconnect {
 	exports org.util.npci.coreconnect;
 	exports org.util.npci.coreconnect.acquirer;
 	exports org.util.npci.coreconnect.issuer;
+	exports org.util.npci.coreconnect.logon;
 	
 	uses org.util.npci.coreconnect.issuer.IssuerDispatcherBuilder;
 	uses org.util.npci.coreconnect.acquirer.AcquirerServerBuilder;

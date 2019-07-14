@@ -13,6 +13,7 @@ import org.util.iso8583.EncoderDecoder;
 import org.util.iso8583.ISO8583Message;
 import org.util.iso8583.format.ISOFormat;
 import org.util.iso8583.format.NPCIFormat;
+import org.util.iso8583.npci.MTI;
 import org.util.iso8583.npci.ResponseCode;
 import org.util.nanolog.Logger;
 import org.util.npci.api.ShutDownable;
@@ -205,6 +206,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			tranmap.remove(requestKey);
 			if (locker.response == null) {
 				locker.response = request.copy();
+				locker.response.put(0, MTI.getCounterMTI(locker.response.get(0)));
 				locker.response.put(39, ResponseCode.ISSUER_INOPERATIVE);
 			}
 			return locker.response;
@@ -212,6 +214,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			logger.error(e);
 		}
 		final ISO8583Message response = request.copy();
+		response.put(0, MTI.getCounterMTI(response.get(0)));
 		response.put(39, ResponseCode.SYSTEM_MALFUNCTION);
 		return response;
 	}

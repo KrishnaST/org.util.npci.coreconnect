@@ -25,12 +25,9 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 	public final void run() {
 		try (Logger logger = Logger.getLogger(LoggerType.BUFFERED, dispatcher.config.issWriter)) {
 			if (request == null) return;
-			logger.info("issuer class : " + getClass().getName());
 			logger.info("issuer request ", new ISO8583LogSupplier(request));
 			execute(logger);
 			logger.info(new ISO8583LogSupplier(request));
-		} catch (Exception e) {
-			Logger.getConsole().info(e);
-		}
+		} catch (Exception e) {Logger.console(e);}
 	}
 }

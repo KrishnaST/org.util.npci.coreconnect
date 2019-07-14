@@ -11,9 +11,9 @@ public abstract class AcquirerServerBuilder {
 
 	public abstract List<String> getSupportedServerTypes();
 
-	public abstract AcquirerServer build(final AcquirerConfig acquirerConfig, final CoreConfig config);
+	public abstract AcquirerServer build(final AcquirerConfig acquirerConfig, final CoreConfig config) throws Exception;
 
-	public static final AcquirerServer getAcquirerServer(final AcquirerConfig acquirerConfig, final CoreConfig config) throws ConfigurationNotFoundException {
+	public static final AcquirerServer getAcquirerServer(final AcquirerConfig acquirerConfig, final CoreConfig config) throws Exception, ConfigurationNotFoundException {
 		final ServiceLoader<AcquirerServerBuilder> serviceLoader = ServiceLoader.load(AcquirerServerBuilder.class, AcquirerServerBuilder.class.getClassLoader());
 		for (AcquirerServerBuilder builder : serviceLoader) { if (builder.getSupportedServerTypes().contains(acquirerConfig.acquirerType)) return builder.build(acquirerConfig, config); }
 		throw new ConfigurationNotFoundException("could not find acquirer server with name : "+acquirerConfig.acquirerType);
