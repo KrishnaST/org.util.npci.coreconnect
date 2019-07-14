@@ -32,7 +32,7 @@ public class ZPKRequest extends AcquirerTransaction {
 			logger.info("logon request  sent : " + EncoderDecoder.log(request));
 			final ISO8583Message response = config.coreconnect.sendRequestToNPCI(request, logger, 15000);
 			logger.info("logon response rcvd : " + EncoderDecoder.log(response));
-			if (response != null && "00".equals(response.get(39)) && Status.NEW == config.coreconnect.getStatus()) config.coreconnect.setStatus(Status.LOGGEDON);
+			if (response != null && "00".equals(response.get(39))) logger.info("successful zpk exchange request");
 			else config.coreconnect.setStatus(Status.NEW);
 		} catch (Exception e) {
 			logger.info(e);

@@ -40,6 +40,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		this.config = config;
 		logger      = config.corelogger;
 		npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
+		setName(config.bankId+"-coreconnect");
 	}
 
 	public final void run() {
