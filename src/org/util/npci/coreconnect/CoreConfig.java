@@ -55,7 +55,7 @@ public final class CoreConfig extends BankConfig {
 	private final List<AcquirerServer> getAcquirerServerList() throws ConfigurationNotFoundException {
 		final List<AcquirerServer> acquirers = new ArrayList<AcquirerServer>();
 		for (AcquirerConfig acquirerConfig : acquirerConfigs) {
-			acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig.acquirerType, this));
+			acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this));
 		}
 		return acquirers;
 	}

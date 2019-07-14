@@ -31,4 +31,9 @@ public class LogonDispatcher extends IssuerDispatcher {
 		return false;
 	}
 
+	@Override
+	public boolean shutdown() {
+		return true;
+	}
+
 }
