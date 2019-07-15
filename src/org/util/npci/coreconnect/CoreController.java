@@ -1,7 +1,6 @@
 package org.util.npci.coreconnect;
 
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.util.nanolog.Logger;
 import org.util.npci.api.BankController;
@@ -10,8 +9,6 @@ import org.util.npci.coreconnect.acquirer.AcquirerServer;
 import org.util.npci.coreconnect.logon.EchoLogon;
 import org.util.npci.coreconnect.logon.Logoff;
 import org.util.npci.coreconnect.logon.Logon;
-import org.util.npci.coreconnect.logon.ScheduledEchoLogon;
-import org.util.npci.coreconnect.logon.ScheduledLogon;
 import org.util.npci.coreconnect.logon.ZPKRequest;
 
 public final class CoreController implements BankController {
@@ -34,8 +31,8 @@ public final class CoreController implements BankController {
 		}
 		config.corelogger.info(bankId + " : starting coreconnect");
 		config.coreconnect.start();
-		logonFuture = config.schedular.scheduleWithFixedDelay(new ScheduledLogon(config), 5, 300, TimeUnit.SECONDS);
-		echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
+		//logonFuture = config.schedular.scheduleWithFixedDelay(new ScheduledLogon(config), 5, 300, TimeUnit.SECONDS);
+		//echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
 	}
 	
 	@Override

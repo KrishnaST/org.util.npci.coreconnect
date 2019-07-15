@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.util.npci.coreconnect.acquirer.AcquirerTransaction;
 import org.util.npci.coreconnect.issuer.IssuerTransaction;
+import org.util.npci.coreconnect.logon.ScheduledEchoLogon;
+import org.util.npci.coreconnect.logon.ScheduledLogon;
 
 public final class CustomThreadFactory implements ThreadFactory {
 
@@ -19,6 +21,7 @@ public final class CustomThreadFactory implements ThreadFactory {
 	public final Thread newThread(Runnable runnable) {
 		if (runnable instanceof AcquirerTransaction) return new Thread(runnable, getName(prefix, "acq", counter.getAndIncrement()));
 		else if (runnable instanceof IssuerTransaction) return new Thread(runnable, getName(prefix, "iss", counter.getAndIncrement()));
+		else if(runnable instanceof ScheduledLogon || runnable instanceof ScheduledEchoLogon) return new Thread(runnable, getName(prefix, "sch", counter.getAndIncrement()));
 		else return new Thread(runnable, getName(prefix, "gen", counter.getAndIncrement()));
 	}
 

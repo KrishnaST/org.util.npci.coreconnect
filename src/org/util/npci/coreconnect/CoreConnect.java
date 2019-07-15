@@ -124,8 +124,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				socket = new Socket();
 				socket.connect(npciAddress, 5000);
 				socket.setKeepAlive(true);
-				socket.setTcpNoDelay(true);
-				socket.setTrafficClass(0x04);
+				socket.setSoTimeout(0);
+				//socket.setTcpNoDelay(true);
+				//socket.setTrafficClass(0x04);
 				is = socket.getInputStream();
 				os = socket.getOutputStream();
 				socketStatus.set(true);
