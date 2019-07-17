@@ -5,7 +5,6 @@ import org.util.iso8583.ISO8583Message;
 import org.util.iso8583.format.ISOFormat;
 import org.util.iso8583.format.NPCIFormat;
 import org.util.nanolog.Logger;
-import org.util.nanolog.LoggerType;
 
 public abstract class IssuerTransaction<T extends IssuerDispatcher> implements Runnable {
 
@@ -23,7 +22,7 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 
 	@Override
 	public final void run() {
-		try (Logger logger = Logger.getLogger(LoggerType.BUFFERED, dispatcher.config.issWriter)) {
+		try (Logger logger = dispatcher.config.getIssuerLogger()) {
 			if (request == null) return;
 			logger.info("issuer request ", new ISO8583LogSupplier(request));
 			execute(logger);

@@ -18,7 +18,7 @@ public final class JSON {
 		return null;
 	}
 	
-	public static final <T> T toJson(final String json, final Class<T> classz) {
+	public static final <T> T fromJsom(final String json, final Class<T> classz) {
 		try {
 			return OBJECT_MAPPER.readValue(json, classz);
 		} catch (IOException e) {}

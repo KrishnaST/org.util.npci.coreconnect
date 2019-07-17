@@ -10,7 +10,7 @@ public abstract class IssuerDispatcherBuilder {
 
 	public abstract List<String> getDispatcherTypes();
 
-	public abstract IssuerDispatcher build(CoreConfig coreConfig);
+	public abstract IssuerDispatcher build(CoreConfig coreConfig) throws ConfigurationNotFoundException;
 
 	public static final IssuerDispatcher getIssuerDispatcher(final CoreConfig config) throws ConfigurationNotFoundException {
 		final ServiceLoader<IssuerDispatcherBuilder> serviceLoader = ServiceLoader.load(IssuerDispatcherBuilder.class, IssuerDispatcherBuilder.class.getClassLoader());

@@ -25,6 +25,7 @@ public final class Logon extends AcquirerTransaction {
 	protected void execute(Logger logger) {
 		try {
 			final Date date = new Date();
+			ISO8583Message request = new ISO8583Message();
 			request.put(0, MTI.NET_MGMT_REQUEST);
 			request.put(7, ISO8583DateField.getISODate(ISO8583DateField.TRANSMISSION, date));
 			request.put(11, String.format("%06d", random.nextInt(999999)));

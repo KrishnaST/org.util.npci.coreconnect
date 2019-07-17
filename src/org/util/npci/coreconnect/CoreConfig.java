@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.util.nanolog.LogWriter;
 import org.util.nanolog.Logger;
 import org.util.nanolog.LoggerType;
@@ -28,7 +30,7 @@ public final class CoreConfig extends BankConfig {
 
 	public final Schedular            schedular;
 	public final IssuerDispatcher     dispatcher;
-	public final HikariDataSource     dataSource;
+	public final DataSource           dataSource;
 	public final List<AcquirerServer> acquirers;
 	public final CoreConnect          coreconnect;
 
@@ -44,10 +46,12 @@ public final class CoreConfig extends BankConfig {
 		corelogger.info("dispatcher initialized : " + dispatcher);
 		dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
 		corelogger.info("dataSource initialized : " + dataSource);
-		acquirers = Collections.unmodifiableList(getAcquirerServerList());
+		if (bankConfig.isAcquirer) acquirers = Collections.unmodifiableList(getAcquirerServerList());
+		else acquirers = List.of();
 		corelogger.info("acquirers initialized : " + acquirers.size());
 		coreconnect = new CoreConnect(this);
 		corelogger.info("coreconnect initialized : " + coreconnect);
+
 	}
 
 	private final List<AcquirerServer> getAcquirerServerList() throws Exception {
@@ -55,4 +59,13 @@ public final class CoreConfig extends BankConfig {
 		for (AcquirerConfig acquirerConfig : acquirerConfigs) { acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this)); }
 		return acquirers;
 	}
+
+	public final Logger getIssuerLogger() {
+		return Logger.getLogger(LoggerType.BUFFERED, issWriter);
+	}
+
+	public final Logger getAcquirerLogger() {
+		return Logger.getLogger(LoggerType.BUFFERED, issWriter);
+	}
+
 }
