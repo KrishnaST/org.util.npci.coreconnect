@@ -13,14 +13,16 @@ import org.util.npci.coreconnect.internals.CustomThreadFactory;
 
 public final class Schedular implements ShutDownable {
 
+	private final String                      schedularName;
 	private final ThreadFactory               threadFactory;
 	private final ScheduledThreadPoolExecutor schedular;
 	private final ThreadPoolExecutor          executor;
 
 	public Schedular(CoreConfig config) {
-		threadFactory = new CustomThreadFactory(config.bankId);
-		schedular     = new ScheduledThreadPoolExecutor(5, threadFactory);
-		executor      = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), threadFactory);
+		this.schedularName = "schedular-" + config.bankId;
+		this.threadFactory = new CustomThreadFactory(config.bankId);
+		this.schedular     = new ScheduledThreadPoolExecutor(5, threadFactory);
+		this.executor      = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), threadFactory);
 		schedular.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
 		schedular.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
 		schedular.setRemoveOnCancelPolicy(true);
@@ -52,6 +54,11 @@ public final class Schedular implements ShutDownable {
 			return true;
 		} catch (Exception e) {}
 		return false;
+	}
+
+	@Override
+	public final String toString() {
+		return schedularName;
 	}
 
 }

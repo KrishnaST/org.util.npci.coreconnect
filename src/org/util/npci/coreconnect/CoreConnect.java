@@ -251,4 +251,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		}
 		return false;
 	}
+
+	@Override
+	public final String toString() {
+		return "coreconnect-"+config.bankId;
+	}
+
 }

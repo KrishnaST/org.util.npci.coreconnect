@@ -28,4 +28,9 @@ public final class CustomThreadFactory implements ThreadFactory {
 	public static final String getName(final String prefix, final String type, final int count) {
 		return prefix + "-" + type + "-" + count;
 	}
+
+	
+	public final String getPrefix() {
+		return prefix;
+	}
 }
