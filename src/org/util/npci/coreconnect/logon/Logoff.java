@@ -33,7 +33,7 @@ public final class Logoff extends AcquirerTransaction {
 			logger.info("logon request  sent : " + EncoderDecoder.log(request));
 			final ISO8583Message response = config.coreconnect.sendRequestToNPCI(request, logger, 15000);
 			logger.info("logon response rcvd : " + EncoderDecoder.log(response));
-			if (response != null && "00".equals(response.get(39)) && Status.SHUTDOWN != config.coreconnect.getStatus()) config.coreconnect.setStatus(Status.ONUSLOGOFF);
+			if (response != null && "00".equals(response.get(39)) && Status.SHUTDOWN != config.coreconnect.getStatus()) config.coreconnect.setStatus(Status.LOGOFF);
 		} catch (Exception e) {
 			logger.info(e);
 		}

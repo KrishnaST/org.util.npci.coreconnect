@@ -73,7 +73,7 @@ public final class RetroClientBuilder {
 	}
 
 	public final Retrofit build() {
-		System.out.println();
+		System.out.println(this);
 		final OkHttpClient.Builder okhttpBuilder = new OkHttpClient.Builder();
 		if (this.level != null) {
 			final RetroLoggingInterceptor logging = new RetroLoggingInterceptor();

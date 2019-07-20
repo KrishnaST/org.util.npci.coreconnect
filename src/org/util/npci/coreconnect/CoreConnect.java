@@ -18,7 +18,7 @@ import org.util.iso8583.npci.ResponseCode;
 import org.util.nanolog.Logger;
 import org.util.npci.api.ShutDownable;
 import org.util.npci.api.Status;
-import org.util.npci.api.model.Locker;
+import org.util.npci.coreconnect.util.Locker;
 
 public final class CoreConnect extends Thread implements ShutDownable {
 
@@ -50,9 +50,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				boolean isNPCISocketConnected = socketStatus.get() ? socketStatus.get() : initSocket();
 				if (!isNPCISocketConnected) logger.info("unable to connect to npci : " + config.bankId + " status : " + status.get());
 				if (!isNPCISocketConnected) { continue; }
-				logger.info("reading from npci : ");
+				logger.info(config.bankId, "reading from npci : ");
 				byte[] bytes = receive();
-				logger.trace("read from npci : " + ByteHexUtil.byteToHex(bytes));
+				logger.trace(config.bankId, "read from npci : " + ByteHexUtil.byteToHex(bytes));
 				if (bytes == null || bytes.length < 10) continue;
 				try {
 					final ISO8583Message message = EncoderDecoder.decode(npciFormat, bytes);
@@ -60,7 +60,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					if (message.isRequest()) config.dispatcher.dispatch(message);
 					else sendResponseToAcquirer(message);
 				} catch (Exception e) {
-					logger.info("message parsing error");
+					logger.info(config.bankId, "message parsing error");
 					logger.info(e);
 				}
 			} catch (Exception e) {
@@ -74,13 +74,13 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	private final boolean send(byte[] bytes, Logger logger) {
 		try {
 			if (socketStatus.get()) {
-				logger.trace("writing : " + ByteHexUtil.byteToHex(bytes));
+				logger.trace(config.bankId, "writing : " + ByteHexUtil.byteToHex(bytes));
 				os.write(bytes);
 				os.flush();
 				return true;
 			}
 		} catch (Exception e) {
-			logger.error("error sending message to npci" + e.getMessage());
+			logger.error(config.bankId, "error sending message to npci" + e.getMessage());
 			socketStatus.set(false);
 			if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
 		}
@@ -92,11 +92,11 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			byte[] bytes = null;
 			try {
 				int b1 = is.read();
-				logger.trace("b1 : " + b1);
+				logger.trace(config.bankId, "b1 : " + b1);
 				int b2 = is.read();
-				logger.trace("b2 : " + b2);
+				logger.trace(config.bankId, "b2 : " + b2);
 				if (b1 < 0 || b2 < 0) {
-					logger.debug("unexpected socket break");
+					logger.debug(config.bankId, "unexpected socket break");
 					socketStatus.set(false);
 					if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
 					return null;
@@ -107,7 +107,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					return bytes;
 				}
 			} catch (Exception e) {
-				logger.debug("error receiving message from npci socketexception : " + e.getMessage());
+				logger.debug(config.bankId, "error receiving message from npci socketexception : " + e.getMessage());
 				socketStatus.set(false);
 				if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
 			}
@@ -120,21 +120,19 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			socketStatus.set(false);
 			closeSocket();
 			try {
-				logger.info("connecting to : " + npciAddress);
+				logger.info(config.bankId, "connecting to : " + npciAddress);
 				socket = new Socket();
 				socket.connect(npciAddress, 5000);
 				socket.setKeepAlive(true);
 				socket.setSoTimeout(0);
-				//socket.setTcpNoDelay(true);
-				//socket.setTrafficClass(0x04);
+				socket.setTcpNoDelay(true);
 				is = socket.getInputStream();
 				os = socket.getOutputStream();
 				socketStatus.set(true);
 				setStatus(Status.NEW);
 				return true;
 			} catch (Exception e) {
-				logger.debug("connect to npci failed.");
-				logger.trace(e);
+				logger.info(config.bankId, e.getMessage());
 				return false;
 			}
 		}
@@ -189,13 +187,13 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, final Logger logger, final int timeoutInMs) {
 		try {
 			final String requestKey = request.getUniqueKey();
-			logger.trace("request key : " + requestKey);
+			logger.trace(config.bankId, "request key : " + requestKey);
 			final Locker<ISO8583Message> locker = new Locker<>(request);
 			tranmap.put(requestKey, locker);
 			final byte[]  bytes  = EncoderDecoder.encode(npciFormat, request);
 			final boolean isSent = send(bytes, logger);
 			if (isSent) {
-				logger.info("waiting started for : " + timeoutInMs);
+				logger.info(config.bankId, "waiting started for : " + timeoutInMs);
 				synchronized (locker) {
 					try {
 						locker.wait(timeoutInMs);
@@ -203,7 +201,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 						logger.info(e);
 					}
 				}
-				logger.trace("waiting finished");
+				logger.trace(config.bankId, "waiting finished");
 			}
 			tranmap.remove(requestKey);
 			if (locker.response == null) {
@@ -223,10 +221,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	public final boolean sendResponseToAcquirer(final ISO8583Message response) {
 		try {
-			logger.trace("response_key : " + response.getUniqueKey());
+			logger.trace(config.bankId, "response_key : " + response.getUniqueKey());
 			Locker<ISO8583Message> locker = tranmap.get(response.getUniqueKey());
 			if (locker == null) {
-				logger.info("delayed response for transaction : " + response.get(39));
+				logger.error(config.bankId, "delayed response for transaction : " + response.get(39));
 				return false;
 			}
 			locker.response = response;

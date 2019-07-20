@@ -18,12 +18,18 @@ public final class IssuerLogon extends IssuerTransaction<IssuerDispatcher> {
 		try {
 			final CoreConnect coreconnect = dispatcher.config.coreconnect;
 			if (LogonType.LOGON.equals(request.get(70))) {
-				if (Status.SHUTDOWN != coreconnect.getStatus()) coreconnect.setStatus(Status.LOGGEDON);
+				if (Status.SHUTDOWN != coreconnect.getStatus()) {
+					if (Status.LOGOFF == coreconnect.getStatus()) dispatcher.config.controller.action("enable-logon");
+					coreconnect.setStatus(Status.LOGGEDON);
+				}
 			} else if (LogonType.LOGOFF.equals(request.get(70))) {
-				if (Status.SHUTDOWN != coreconnect.getStatus()) coreconnect.setStatus(Status.OFUSLOGOFF);
+				if (Status.SHUTDOWN != coreconnect.getStatus()) {
+					dispatcher.config.controller.action("disable-logon");
+					coreconnect.setStatus(Status.LOGOFF);
+				}
 			} else if (LogonType.ECHO_LOGON.equals(request.get(70))) {
 				if (Status.SHUTDOWN != coreconnect.getStatus()) coreconnect.setStatus(Status.LOGGEDON);
-			} else if (LogonType.CUTOVER.equals(request.get(70))) { if (Status.SHUTDOWN != coreconnect.getStatus()) logger.info("cutover message."); }
+			} else if (LogonType.CUTOVER.equals(request.get(70))) { if (Status.SHUTDOWN != coreconnect.getStatus()) { logger.info("cutover message."); } }
 			request.put(0, MTI.NET_MGMT_RESPONSE);
 			request.put(39, "00");
 			final boolean isSent = coreconnect.sendResponseToNPCI(request, logger);
