@@ -23,8 +23,6 @@ import com.zaxxer.hikari.HikariDataSource;
 
 public final class CoreConfig extends BankConfig {
 
-	private static final long serialVersionUID = 1L;
-
 	public final LogWriter issWriter;
 	public final LogWriter acqWriter;
 	public final Logger    corelogger;
@@ -40,7 +38,6 @@ public final class CoreConfig extends BankConfig {
 		issWriter  = new LogWriter(bankConfig.bankId, "issuer_tx", true);
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
-
 		schedular = new Schedular(this);
 		corelogger.info("schedular initialized : " + schedular);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
