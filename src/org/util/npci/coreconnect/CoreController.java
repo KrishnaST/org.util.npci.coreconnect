@@ -46,13 +46,13 @@ public final class CoreController implements BankController {
 		else if ("logoff".equals(action)) config.schedular.execute(new Logoff(config));
 		else if ("key-exchange".equals(action)) config.schedular.execute(new ZPKRequest(config));
 		else if ("toggle-console".equals(action)) Logger.setConsoleStatus(Logger.getConsoleStatus() ^ true);
-		else if ("disable-logon".equals(action)) {
+		else if ("disable-auto-logon".equals(action)) {
 			if(logonFuture != null) logonFuture.cancel(true);
 			if(echolFuture != null) echolFuture.cancel(true);
 			logonFuture = null;
 			echolFuture = null;
 		}
-		else if ("enable-logon".equals(action)) {
+		else if ("enable-auto-logon".equals(action)) {
 			if(logonFuture == null || logonFuture.isCancelled()) logonFuture = config.schedular.scheduleWithFixedDelay(new ScheduledLogon(config), 5, 300, TimeUnit.SECONDS);
 			if(echolFuture == null || echolFuture.isCancelled()) echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
 		}
