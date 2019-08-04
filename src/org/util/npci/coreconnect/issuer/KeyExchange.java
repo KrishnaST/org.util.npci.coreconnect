@@ -10,9 +10,14 @@ public abstract class KeyExchange<T extends IssuerDispatcher> extends IssuerTran
 	}
 
 	@Override
-	protected void execute(Logger logger) {
+	protected final void execute(Logger logger) {
+		logger.info("key change request from npci.");
+		final String zpk_zmk 	= request.get(48).substring(0, 32);
+		final String kcv 		= request.get(48).substring(32);
 		
 	}
+	
+	public abstract String getZMK();
 	
 	public abstract void processKey();
 
