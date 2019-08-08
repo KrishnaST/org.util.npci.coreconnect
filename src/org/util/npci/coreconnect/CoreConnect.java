@@ -9,7 +9,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.util.datautil.ByteHexUtil;
+import org.util.datautil.TLV;
+import org.util.hsm.api.model.MACResponse;
 import org.util.iso8583.EncoderDecoder;
+import org.util.iso8583.ISO8583LogSupplier;
 import org.util.iso8583.ISO8583Message;
 import org.util.iso8583.format.ISOFormat;
 import org.util.iso8583.format.NPCIFormat;
@@ -19,7 +22,10 @@ import org.util.nanolog.Logger;
 import org.util.npci.api.ShutDownable;
 import org.util.npci.api.Status;
 import org.util.npci.coreconnect.util.Locker;
+import org.util.npci.coreconnect.util.MACUtil;
 
+
+//@formatter:off
 public final class CoreConnect extends Thread implements ShutDownable {
 
 	private static final ISOFormat npciFormat = NPCIFormat.getInstance();
@@ -37,9 +43,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	public final Logger     logger;
 
 	public CoreConnect(CoreConfig config) {
-		this.config = config;
-		logger      = config.corelogger;
-		npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
+		this.config      = config;
+		this.logger      = config.corelogger;
+		this.npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
 		setName(config.bankId + "-coreconnect");
 	}
 
@@ -61,11 +67,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					else sendResponseToAcquirer(message);
 				} catch (Exception e) {
 					logger.info(config.bankId, "message parsing error");
-					logger.info(e);
+					logger.error(e);
 				}
-			} catch (Exception e) {
-				logger.info(e);
-			}
+			} catch (Exception e) {logger.info(e);}
 		}
 		setStatus(Status.SHUTDOWN);
 		logger.info("shutting down npci connector : " + config.bankId);
@@ -186,6 +190,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, final Logger logger, final int timeoutInMs) {
 		try {
+			if (config.hasMAC && MTI.isMACable(request.get(0), request.get(3))) {
+				final MACResponse macResponse = MACUtil.calculateMAC(config, request.getMAB(), logger);
+				if (macResponse != null && macResponse.isSuccess) request.put(48, TLV.parse(request.get(48)).put("099", macResponse.mac).build());
+			}
 			final String requestKey = request.getUniqueKey();
 			logger.trace(config.bankId, "request key : " + requestKey);
 			final Locker<ISO8583Message> locker = new Locker<>(request);
@@ -206,15 +214,23 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			tranmap.remove(requestKey);
 			if (locker.response == null) {
 				locker.response = request.copy();
-				locker.response.put(0, MTI.getCounterMTI(locker.response.get(0)));
+				locker.response.put(0, MTI.getResponseMTI(locker.response.get(0)));
 				locker.response.put(39, ResponseCode.ISSUER_INOPERATIVE);
+			}
+			else if(config.hasMAC && MTI.isMACable(locker.response.get(0), locker.response.get(3))) {
+				TLV tlv = TLV.parse(locker.response.get(48));
+				MACResponse macResponse = MACUtil.validateMAC(config, locker.response.getMAB(), tlv.get("099"), logger);
+				if(macResponse == null || !macResponse.isSuccess) {
+					logger.error("mac verification failure.changing response code to : "+ResponseCode.MAC_FAILURE_ACQUIRER);
+					locker.response.put(39, ResponseCode.MAC_FAILURE_ACQUIRER);
+				}
 			}
 			return locker.response;
 		} catch (Exception e) {
 			logger.error(e);
 		}
 		final ISO8583Message response = request.copy();
-		response.put(0, MTI.getCounterMTI(response.get(0)));
+		response.put(0, MTI.getResponseMTI(response.get(0)));
 		response.put(39, ResponseCode.SYSTEM_MALFUNCTION);
 		return response;
 	}
@@ -240,19 +256,23 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	public final boolean sendResponseToNPCI(final ISO8583Message response, final Logger logger) {
 		try {
+			if (config.hasMAC && MTI.isMACable(response.get(0), response.get(3))) {
+				
+				final MACResponse macResponse = MACUtil.calculateMAC(config, response.getMAB(), logger);
+				if (macResponse != null && macResponse.isSuccess) response.put(48, TLV.parse(response.get(48)).put("099", macResponse.mac).build());
+				else logger.error("mac calculation failed.");
+			}
+			logger.trace(new ISO8583LogSupplier(response));
 			byte[]        bytes  = EncoderDecoder.encode(npciFormat, response);
 			final boolean isSent = send(bytes, logger);
 			return isSent;
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error(e);
-		}
+		} catch (Exception e) {logger.error(e);}
 		return false;
 	}
 
 	@Override
 	public final String toString() {
-		return "coreconnect-"+config.bankId;
+		return "coreconnect-" + config.bankId;
 	}
 
 }

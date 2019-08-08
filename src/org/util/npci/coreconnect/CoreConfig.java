@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import org.util.hsm.api.HSMConfig;
+import org.util.hsm.api.HSMService;
 import org.util.nanolog.LogWriter;
 import org.util.nanolog.Logger;
 import org.util.nanolog.LoggerType;
@@ -28,35 +30,43 @@ public final class CoreConfig extends BankConfig {
 	public final Logger    corelogger;
 
 	public final Schedular            schedular;
+	public final HSMService           hsmService;
 	public final IssuerDispatcher     dispatcher;
 	public final DataSource           dataSource;
 	public final List<AcquirerServer> acquirers;
 	public final CoreConnect          coreconnect;
+	public final HSMConfig            hsmConfig;
 
 	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws Exception {
 		super(bankConfig, controller);
 		issWriter  = new LogWriter(bankConfig.bankId, "issuer_tx", true);
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
+
+		hsmService = HSMService.getService("THALES");
+		this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port)
+				.withDecimalizationTable(defaultHSMConfig.decTab)
+				.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK)
+				.withMaximumPinLength(defaultHSMConfig.maximumPinLength)
+				.withMinimumPinLength(defaultHSMConfig.minimumPinLength).build();
+
 		schedular = new Schedular(this);
 		corelogger.info("schedular initialized : " + schedular);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
 		corelogger.info("dispatcher initialized : " + dispatcher.getName());
-		if(!this.dbProperties.isEmpty()) {
-			this.dbProperties.put("poolName", "hikari-datasource-"+bankId);
+		if (!this.dbProperties.isEmpty()) {
+			this.dbProperties.put("poolName", "hikari-datasource-" + bankId);
 			dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
 			corelogger.info("dataSource initialized : " + dataSource);
-		}
-		else {
+		} else {
 			dataSource = null;
 			corelogger.info("dataSource not initialized : " + dataSource);
 		}
 		if (bankConfig.isAcquirer) {
 			acquirers = Collections.unmodifiableList(getAcquirerServerList());
 			corelogger.info("acquirers initialized : " + acquirers.stream().map(acquirer -> acquirer.acquirerConfig.acquirerName).collect(Collectors.toList()));
-		}
-		else acquirers = List.of();
-		
+		} else acquirers = List.of();
+
 		coreconnect = new CoreConnect(this);
 		corelogger.info("coreconnect initialized : " + coreconnect);
 
