@@ -25,7 +25,7 @@ public final class CustomThreadFactory implements ThreadFactory {
 		else return new Thread(runnable, getName(prefix, "gen", counter.getAndIncrement()));
 	}
 
-	public static final String getName(final String prefix, final String type, final int count) {
+	private static final String getName(final String prefix, final String type, final int count) {
 		return prefix + "-" + type + "-" + count;
 	}
 
