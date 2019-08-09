@@ -1,7 +1,6 @@
 package org.util.npci.coreconnect;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,7 +62,7 @@ public final class CoreConfig extends BankConfig {
 			corelogger.info("dataSource not initialized : " + dataSource);
 		}
 		if (bankConfig.isAcquirer) {
-			acquirers = Collections.unmodifiableList(getAcquirerServerList());
+			acquirers = getAcquirerServerList();
 			corelogger.info("acquirers initialized : " + acquirers.stream().map(acquirer -> acquirer.acquirerConfig.acquirerName).collect(Collectors.toList()));
 		} else acquirers = List.of();
 
@@ -83,7 +82,7 @@ public final class CoreConfig extends BankConfig {
 	}
 
 	public final Logger getAcquirerLogger() {
-		return Logger.getLogger(LoggerType.BUFFERED, issWriter);
+		return Logger.getLogger(LoggerType.BUFFERED, acqWriter);
 	}
 
 }

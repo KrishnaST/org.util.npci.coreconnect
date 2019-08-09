@@ -5,8 +5,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.util.nanolog.Logger;
 import org.util.npci.api.BankController;
+import org.util.npci.api.ConfigurationNotFoundException;
 import org.util.npci.api.model.BankConfig;
 import org.util.npci.coreconnect.acquirer.AcquirerServer;
+import org.util.npci.coreconnect.acquirer.AcquirerServerBuilder;
 import org.util.npci.coreconnect.logon.EchoLogon;
 import org.util.npci.coreconnect.logon.Logoff;
 import org.util.npci.coreconnect.logon.Logon;
@@ -20,6 +22,7 @@ public final class CoreController implements BankController {
 
 	private ScheduledFuture<?> logonFuture;
 	private ScheduledFuture<?> echolFuture;
+	private ScheduledFuture<?> logFuture;
 
 	public CoreController(final BankConfig config) throws Exception {
 		this.config = new CoreConfig(config, this);
@@ -28,18 +31,19 @@ public final class CoreController implements BankController {
 	@Override
 	public final void start() {
 		final String bankId = config.bankId;
+		config.corelogger.info(bankId + " : starting coreconnect");
+		config.coreconnect.start();
+		logFuture 	= config.schedular.scheduleAtFixedRate((Runnable) Logger.CONSOLE, Logger.getEndOfDay(), 24*60*60, TimeUnit.SECONDS);
+		logonFuture = config.schedular.scheduleWithFixedDelay(new ScheduledLogon(config), 5, 300, TimeUnit.SECONDS);
+		echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
 		for (AcquirerServer server : config.acquirers) {
 			config.corelogger.info(bankId + " : starting acquirer server " + server.getServerType());
 			server.start();
 		}
-		config.corelogger.info(bankId + " : starting coreconnect");
-		config.coreconnect.start();
-		logonFuture = config.schedular.scheduleWithFixedDelay(new ScheduledLogon(config), 5, 300, TimeUnit.SECONDS);
-		echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
 	}
 	
 	@Override
-	public final void action(String action, Object... objects) {
+	public final void action(String action, Object... objects) throws ConfigurationNotFoundException, Exception {
 		config.corelogger.info("action : " + action);
 		if ("logon".equals(action)) config.schedular.execute(new Logon(config));
 		else if ("echo-logon".equals(action)) config.schedular.execute(new EchoLogon(config));
@@ -56,6 +60,25 @@ public final class CoreController implements BankController {
 			if(logonFuture == null || logonFuture.isCancelled()) logonFuture = config.schedular.scheduleWithFixedDelay(new ScheduledLogon(config), 5, 300, TimeUnit.SECONDS);
 			if(echolFuture == null || echolFuture.isCancelled()) echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
 		}
+		else if ("start-acquirers".equals(action)) {
+			for(final AcquirerServer acquirerServer : config.acquirers) {
+				if(!acquirerServer.isAlive()) {
+					config.corelogger.info(acquirerServer.getName(), acquirerServer.getAcquirerStatus());
+					final AcquirerServer newServer = AcquirerServerBuilder.getAcquirerServer(acquirerServer.acquirerConfig, config);
+					config.acquirers.remove(acquirerServer);
+					config.acquirers.add(newServer);
+					newServer.start();
+					config.corelogger.info(newServer.getAcquirerStatus());
+				}
+				else config.corelogger.info(acquirerServer.getServerType(), acquirerServer.getAcquirerStatus());
+			}
+		}
+		else if ("stop-acquirers".equals(action)) {
+			for(final AcquirerServer acquirerServer : config.acquirers) {
+				acquirerServer.shutdownQuietly();
+				config.corelogger.info(acquirerServer.getAcquirerStatus());
+			}
+		}
 	}
 	
 	@Override
@@ -66,10 +89,11 @@ public final class CoreController implements BankController {
 		}
 		config.corelogger.error(bankId + " : shutting down datasource : " + closeQuietly((AutoCloseable) config.dataSource));
 		config.corelogger.error(bankId + " : shutting down schedular : " + config.schedular.shutdownQuietly());
-		logonFuture.cancel(true);
-		echolFuture.cancel(true);
+		if(logonFuture != null && !logonFuture.isCancelled()) logonFuture.cancel(true);
+		if(echolFuture != null && !echolFuture.isCancelled()) echolFuture.cancel(true);
 		config.corelogger.error(bankId + " : shutting down dispatcher : " + config.dispatcher.shutdownQuietly());
 		config.corelogger.error(bankId + " : shutting down coreconnect : " + config.coreconnect.shutdownQuietly());
+		config.corelogger.error(bankId + " : shutting down log date change schedular : " + logFuture.cancel(false));
 		return true;
 	}
 

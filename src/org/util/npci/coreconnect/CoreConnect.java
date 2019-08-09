@@ -255,10 +255,11 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	}
 
 	public final boolean sendResponseToNPCI(final ISO8583Message response, final Logger logger) {
+		response.put(0, MTI.getResponseMTI(response.get(0)));
 		try {
 			if (config.hasMAC && MTI.isMACable(response.get(0), response.get(3))) {
-				
 				final MACResponse macResponse = MACUtil.calculateMAC(config, response.getMAB(), logger);
+				logger.info("mac response", macResponse.toString());
 				if (macResponse != null && macResponse.isSuccess) response.put(48, TLV.parse(response.get(48)).put("099", macResponse.mac).build());
 				else logger.error("mac calculation failed.");
 			}
