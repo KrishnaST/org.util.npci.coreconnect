@@ -11,9 +11,10 @@ import org.util.iso8583.npci.MTI;
 import org.util.nanolog.Logger;
 import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConfig;
-import org.util.npci.coreconnect.acquirer.AcquirerTransaction;
+import org.util.npci.coreconnect.acquirer.NoLogAcquirerTransaction;
+import org.util.npci.coreconnect.internals.Scheduled;
 
-public final class ScheduledLogon extends AcquirerTransaction {
+public final class ScheduledLogon extends NoLogAcquirerTransaction implements Scheduled {
 
 	public ScheduledLogon(CoreConfig config) {
 		super(config);

@@ -11,9 +11,9 @@ import org.util.iso8583.npci.MTI;
 import org.util.nanolog.Logger;
 import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConfig;
-import org.util.npci.coreconnect.acquirer.AcquirerTransaction;
+import org.util.npci.coreconnect.acquirer.NoLogAcquirerTransaction;
 
-public final class EchoLogon extends AcquirerTransaction {
+public final class EchoLogon extends NoLogAcquirerTransaction {
 
 	public EchoLogon(CoreConfig config) {
 		super(config);

@@ -7,7 +7,7 @@ import org.util.nanolog.Logger;
 import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConnect;
 
-public final class IssuerLogon extends IssuerTransaction<IssuerDispatcher> {
+public final class IssuerLogon extends NoLogIssuerTransaction<IssuerDispatcher> {
 
 	public IssuerLogon(ISO8583Message request, IssuerDispatcher dispatcher) {
 		super(request, dispatcher);
@@ -16,7 +16,7 @@ public final class IssuerLogon extends IssuerTransaction<IssuerDispatcher> {
 	@Override
 	protected void execute(Logger logger) {
 		try {
-			final CoreConnect coreconnect = dispatcher.config.coreconnect;
+			final CoreConnect coreconnect = config.coreconnect;
 			if (LogonType.LOGON.equals(request.get(70))) {
 				if (Status.SHUTDOWN != coreconnect.getStatus()) {
 					if (Status.LOGOFF == coreconnect.getStatus()) dispatcher.config.controller.action("enable-logon");
@@ -32,7 +32,7 @@ public final class IssuerLogon extends IssuerTransaction<IssuerDispatcher> {
 			} else if (LogonType.CUTOVER.equals(request.get(70))) { if (Status.SHUTDOWN != coreconnect.getStatus()) { logger.info("cutover message."); } }
 			request.put(0, MTI.NET_MGMT_RESPONSE);
 			request.put(39, "00");
-			final boolean isSent = coreconnect.sendResponseToNPCI(request, logger);
+			final boolean isSent = sendResponseToNPCI(request, null, logger);
 			logger.info("isSent : " + isSent);
 		} catch (Exception e) {
 			logger.info(e);
