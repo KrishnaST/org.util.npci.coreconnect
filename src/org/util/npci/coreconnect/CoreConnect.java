@@ -57,14 +57,20 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				if (!isNPCISocketConnected) logger.info("unable to connect to npci : " + config.bankId + " status : " + status.get());
 				if (!isNPCISocketConnected) { continue; }
 				logger.info(config.bankId, "reading from npci : ");
-				byte[] bytes = receive();
+				final byte[] bytes = receive();
 				logger.trace(config.bankId, "read from npci : " + ByteHexUtil.byteToHex(bytes));
 				if (bytes == null || bytes.length < 10) continue;
 				try {
 					final ISO8583Message message = EncoderDecoder.decode(npciFormat, bytes);
 					if (message == null || message.get(0) == null) continue;
-					if (message.isRequest()) config.dispatcher.dispatch(message);
-					else sendResponseToAcquirer(message);
+					if (message.isRequest()) {
+						message.putAdditional(PropertyName.NPCI_RAW_REQUEST, bytes);
+						config.dispatcher.dispatch(message);
+					}
+					else {
+						message.putAdditional(PropertyName.NPCI_RAW_RESPONSE, bytes);
+						sendResponseToAcquirer(message);
+					}
 				} catch (Exception e) {
 					logger.info(config.bankId, "message parsing error");
 					logger.error(e);
@@ -78,13 +84,13 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	private final boolean send(byte[] bytes, Logger logger) {
 		try {
 			if (socketStatus.get()) {
-				logger.trace(config.bankId, "writing : " + ByteHexUtil.byteToHex(bytes));
+				this.logger.trace(config.bankId, "writing : " + ByteHexUtil.byteToHex(bytes));
 				os.write(bytes);
 				os.flush();
 				return true;
 			}
 		} catch (Exception e) {
-			logger.error(config.bankId, "error sending message to npci" + e.getMessage());
+			this.logger.error(config.bankId, "error sending message to npci" + e.getMessage());
 			socketStatus.set(false);
 			if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
 		}
@@ -96,22 +102,22 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			byte[] bytes = null;
 			try {
 				int b1 = is.read();
-				logger.trace(config.bankId, "b1 : " + b1);
+				this.logger.trace(config.bankId, "b1 : " + b1);
 				int b2 = is.read();
-				logger.trace(config.bankId, "b2 : " + b2);
+				this.logger.trace(config.bankId, "b2 : " + b2);
 				if (b1 < 0 || b2 < 0) {
-					logger.debug(config.bankId, "unexpected socket break");
+					this.logger.debug(config.bankId, "unexpected socket break");
 					socketStatus.set(false);
 					if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
 					return null;
 				} else {
-					logger.trace("len : " + (b1 * 256 + b2));
+					this.logger.trace("len : " + (b1 * 256 + b2));
 					bytes = new byte[b1 * 256 + b2];
 					is.read(bytes);
 					return bytes;
 				}
 			} catch (Exception e) {
-				logger.debug(config.bankId, "error receiving message from npci socketexception : " + e.getMessage());
+				this.logger.debug(config.bankId, "error receiving message from npci socketexception : " + e.getMessage());
 				socketStatus.set(false);
 				if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
 			}
@@ -188,6 +194,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		return false;
 	}
 
+	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, final Logger logger) {
+		return sendRequestToNPCI(request, logger, config.acquirerTimeout*1000);
+	}
+	
 	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, final Logger logger, final int timeoutInMs) {
 		try {
 			if (config.hasMAC && MTI.isMACable(request.get(0), request.get(3))) {
@@ -199,6 +209,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			final Locker<ISO8583Message> locker = new Locker<>(request);
 			tranmap.put(requestKey, locker);
 			final byte[]  bytes  = EncoderDecoder.encode(npciFormat, request);
+			request.putAdditional(PropertyName.NPCI_RAW_REQUEST, bytes);
 			final boolean isSent = send(bytes, logger);
 			if (isSent) {
 				logger.info(config.bankId, "waiting started for : " + timeoutInMs);

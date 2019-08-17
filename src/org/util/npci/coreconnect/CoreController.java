@@ -1,5 +1,7 @@
 package org.util.npci.coreconnect;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -61,17 +63,21 @@ public final class CoreController implements BankController {
 			if(echolFuture == null || echolFuture.isCancelled()) echolFuture = config.schedular.scheduleWithFixedDelay(new ScheduledEchoLogon(config), 180, 180, TimeUnit.SECONDS);
 		}
 		else if ("start-acquirers".equals(action)) {
+			final List<AcquirerServer> removables = new ArrayList<AcquirerServer>();
+			final List<AcquirerServer> addables = new ArrayList<AcquirerServer>();
 			for(final AcquirerServer acquirerServer : config.acquirers) {
 				if(!acquirerServer.isAlive()) {
 					config.corelogger.info(acquirerServer.getName(), acquirerServer.getAcquirerStatus());
 					final AcquirerServer newServer = AcquirerServerBuilder.getAcquirerServer(acquirerServer.acquirerConfig, config);
-					config.acquirers.remove(acquirerServer);
-					config.acquirers.add(newServer);
+					removables.add(acquirerServer);
+					addables.add(newServer);
 					newServer.start();
 					config.corelogger.info(newServer.getAcquirerStatus());
 				}
 				else config.corelogger.info(acquirerServer.getServerType(), acquirerServer.getAcquirerStatus());
 			}
+			config.acquirers.removeAll(removables);
+			config.acquirers.addAll(addables);
 		}
 		else if ("stop-acquirers".equals(action)) {
 			for(final AcquirerServer acquirerServer : config.acquirers) {

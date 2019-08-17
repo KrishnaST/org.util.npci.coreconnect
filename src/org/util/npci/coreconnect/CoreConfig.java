@@ -43,12 +43,15 @@ public final class CoreConfig extends BankConfig {
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
 
 		hsmService = HSMService.getService("THALES");
-		this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port)
-				.withDecimalizationTable(defaultHSMConfig.decTab)
-				.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK)
-				.withMaximumPinLength(defaultHSMConfig.maximumPinLength)
-				.withMinimumPinLength(defaultHSMConfig.minimumPinLength).build();
-
+		if(defaultHSMConfig != null ) {
+			this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port)
+					.withDecimalizationTable(defaultHSMConfig.decTab)
+					.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK)
+					.withMaximumPinLength(defaultHSMConfig.maximumPinLength)
+					.withMinimumPinLength(defaultHSMConfig.minimumPinLength).build();
+		}
+		else this.hsmConfig = null;
+		
 		schedular = new Schedular(this);
 		corelogger.info("schedular initialized : " + schedular);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);

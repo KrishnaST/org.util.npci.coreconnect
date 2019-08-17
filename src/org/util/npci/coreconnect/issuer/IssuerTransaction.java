@@ -26,7 +26,7 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 
 	@Override
 	public final void run() {
-		try(final Logger logger = dispatcher.config.getIssuerLogger()) {
+		try(final Logger logger = config.getIssuerLogger()) {
 			if (request == null) return;
 			logger.info("issuer class ", getClass().getName());
 			logger.trace("issuer request ", new ISO8583LogSupplier(request));
