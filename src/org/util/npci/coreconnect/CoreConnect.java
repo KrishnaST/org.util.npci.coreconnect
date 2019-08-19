@@ -21,6 +21,7 @@ import org.util.iso8583.npci.ResponseCode;
 import org.util.nanolog.Logger;
 import org.util.npci.api.ShutDownable;
 import org.util.npci.api.Status;
+import org.util.npci.coreconnect.logon.Logon;
 import org.util.npci.coreconnect.util.Locker;
 import org.util.npci.coreconnect.util.MACUtil;
 
@@ -53,10 +54,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		setStatus(Status.NEW);
 		while (Status.SHUTDOWN != status.get()) {
 			try {
-				boolean isNPCISocketConnected = socketStatus.get() ? socketStatus.get() : initSocket();
+				boolean isNPCISocketConnected = socketStatus.get() ? true : initSocket();
 				if (!isNPCISocketConnected) logger.info("unable to connect to npci : " + config.bankId + " status : " + status.get());
 				if (!isNPCISocketConnected) { continue; }
-				logger.info(config.bankId, "reading from npci : ");
+				logger.info(config.bankId, "connected and reading from npci : ");
 				final byte[] bytes = receive();
 				logger.trace(config.bankId, "read from npci : " + ByteHexUtil.byteToHex(bytes));
 				if (bytes == null || bytes.length < 10) continue;
@@ -83,7 +84,8 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	private final boolean send(byte[] bytes, Logger logger) {
 		try {
-			if (socketStatus.get()) {
+			final boolean connected = socketStatus.get() ?  true : initSocket();
+			if (connected) {
 				this.logger.trace(config.bankId, "writing : " + ByteHexUtil.byteToHex(bytes));
 				os.write(bytes);
 				os.flush();
@@ -140,6 +142,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				os = socket.getOutputStream();
 				socketStatus.set(true);
 				setStatus(Status.NEW);
+				config.schedular.execute(new Logon(config));
 				return true;
 			} catch (Exception e) {
 				logger.info(config.bankId, e.getMessage());
@@ -188,6 +191,20 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		this.status.set(status);
 		config.statusReceiver.notify(status);
 	}
+	
+	public final void setSocketStatus(boolean status) {
+		this.socketStatus.set(status);
+	}
+	
+	public final boolean resetSocket() {
+		this.socketStatus.set(false);
+		try{
+			socket.close();
+			initSocket();
+			return true;
+		} catch (Exception e) {logger.error(e);}
+		return false;
+	}
 
 	public final boolean isSocketConnected() {
 		if (socket != null && socket.isConnected()) return true;
@@ -221,7 +238,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					}
 				}
 				logger.trace(config.bankId, "waiting finished");
-			}
+			} else logger.info("npci connectity down while transaction ", request.get(37));
 			tranmap.remove(requestKey);
 			if (locker.response == null) {
 				locker.response = request.copy();

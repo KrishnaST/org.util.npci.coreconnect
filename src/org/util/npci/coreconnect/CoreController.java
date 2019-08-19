@@ -85,6 +85,9 @@ public final class CoreController implements BankController {
 				config.corelogger.info(acquirerServer.getAcquirerStatus());
 			}
 		}
+		else if ("reset-npci-socket".equals(action)) {
+			config.coreconnect.resetSocket();
+		}
 	}
 	
 	@Override
