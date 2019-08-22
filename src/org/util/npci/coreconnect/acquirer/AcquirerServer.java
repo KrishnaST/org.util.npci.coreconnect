@@ -9,7 +9,7 @@ public abstract class AcquirerServer extends Thread implements ShutDownable {
 	public final AcquirerConfig acquirerConfig;
 	public final CoreConfig     config;
 
-	public AcquirerServer(AcquirerConfig acquirerConfig, CoreConfig config) {
+	public AcquirerServer(final AcquirerConfig acquirerConfig, final CoreConfig config) {
 		this.acquirerConfig = acquirerConfig;
 		this.config         = config;
 		setName(config.bankId + "-acqserver");

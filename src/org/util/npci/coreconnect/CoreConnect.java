@@ -21,6 +21,7 @@ import org.util.iso8583.npci.ResponseCode;
 import org.util.nanolog.Logger;
 import org.util.npci.api.ShutDownable;
 import org.util.npci.api.Status;
+import org.util.npci.coreconnect.issuer.UnIdentifiedTransaction;
 import org.util.npci.coreconnect.logon.Logon;
 import org.util.npci.coreconnect.util.Locker;
 import org.util.npci.coreconnect.util.MACUtil;
@@ -66,7 +67,8 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					if (message == null || message.get(0) == null) continue;
 					if (message.isRequest()) {
 						message.putAdditional(PropertyName.NPCI_RAW_REQUEST, bytes);
-						config.dispatcher.dispatch(message);
+						final boolean dispatched = config.dispatcher.dispatch(message);
+						if(!dispatched) config.schedular.execute(new UnIdentifiedTransaction(message, config.dispatcher));
 					}
 					else {
 						message.putAdditional(PropertyName.NPCI_RAW_RESPONSE, bytes);
@@ -84,13 +86,14 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	private final boolean send(byte[] bytes, Logger logger) {
 		try {
-			final boolean connected = socketStatus.get() ?  true : initSocket();
+			final boolean connected = socketStatus.get() ?  true : false;//initSocket();
 			if (connected) {
 				this.logger.trace(config.bankId, "writing : " + ByteHexUtil.byteToHex(bytes));
 				os.write(bytes);
 				os.flush();
 				return true;
 			}
+			return false;
 		} catch (Exception e) {
 			this.logger.error(config.bankId, "error sending message to npci" + e.getMessage());
 			socketStatus.set(false);
@@ -146,6 +149,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				return true;
 			} catch (Exception e) {
 				logger.info(config.bankId, e.getMessage());
+				logger.trace(e);
 				return false;
 			}
 		}

@@ -60,5 +60,9 @@ public final class Schedular implements ShutDownable {
 	public final String toString() {
 		return schedularName;
 	}
+	
+	public final String metrics() {
+		return new StringBuilder(toString()).append(" schedular : ").append(schedular).append("\r\n").append(toString()).append(" executor : ").append(executor).toString();
+	}
 
 }
