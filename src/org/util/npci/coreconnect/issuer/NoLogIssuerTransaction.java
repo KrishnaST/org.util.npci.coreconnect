@@ -21,6 +21,7 @@ public abstract class NoLogIssuerTransaction<T extends IssuerDispatcher> impleme
 
 	@Override
 	public final void run() {
+		Thread.currentThread().setName(config.bankId + "-"+getClass().getSimpleName());
 		try	{
 			final Logger logger = Logger.CONSOLE;
 			if (request == null) return;
@@ -28,6 +29,7 @@ public abstract class NoLogIssuerTransaction<T extends IssuerDispatcher> impleme
 			logger.trace("issuer request ", new ISO8583LogSupplier(request));
 			execute(logger);
 		} catch (final Exception e) {config.corelogger.error(e);}
+		Thread.currentThread().setName("");
 	}
 	
 	protected final boolean sendResponseToNPCI(final ISO8583Message response, final String responseCode, final Logger logger) {

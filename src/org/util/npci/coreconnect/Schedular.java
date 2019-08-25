@@ -18,9 +18,9 @@ public final class Schedular implements ShutDownable {
 	private final ScheduledThreadPoolExecutor schedular;
 	private final ThreadPoolExecutor          executor;
 
-	public Schedular(CoreConfig config) {
+	public Schedular(final CoreConfig config) {
 		this.schedularName = "schedular-" + config.bankId;
-		this.threadFactory = new CustomThreadFactory(config.bankId);
+		this.threadFactory = new CustomThreadFactory(config.bankId, config);
 		this.schedular     = new ScheduledThreadPoolExecutor(5, threadFactory);
 		this.executor      = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), threadFactory);
 		schedular.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
@@ -60,9 +60,10 @@ public final class Schedular implements ShutDownable {
 	public final String toString() {
 		return schedularName;
 	}
-	
+
 	public final String metrics() {
-		return new StringBuilder(toString()).append(" schedular : ").append(schedular).append("\r\n").append(toString()).append(" executor : ").append(executor).toString();
+		return new StringBuilder(toString()).append(" schedular : ").append(schedular).append("\r\n").append(toString()).append(" executor : ").append(executor)
+				.toString();
 	}
 
 }

@@ -4,10 +4,12 @@
 module org.util.npci.coreconnect {
 
 	exports org.util.npci.coreconnect;
-	exports org.util.npci.coreconnect.acquirer;
-	exports org.util.npci.coreconnect.issuer;
-	exports org.util.npci.coreconnect.logon;
+	
 	exports org.util.npci.coreconnect.util;
+	exports org.util.npci.coreconnect.logon;
+	exports org.util.npci.coreconnect.issuer;
+	exports org.util.npci.coreconnect.acquirer;
+	exports org.util.npci.coreconnect.interceptor;
 	
 	requires transitive java.sql;
 	requires transitive com.zaxxer.hikari;
@@ -30,6 +32,7 @@ module org.util.npci.coreconnect {
 
 	uses org.util.npci.coreconnect.issuer.IssuerDispatcherBuilder;
 	uses org.util.npci.coreconnect.acquirer.AcquirerServerBuilder;
+	uses org.util.npci.coreconnect.interceptor.InterceptorBuilder;
 
 	provides org.util.npci.coreconnect.issuer.IssuerDispatcherBuilder with org.util.npci.coreconnect.issuer.LogonDispatcherBuilder;
 }

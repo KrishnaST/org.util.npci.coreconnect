@@ -16,6 +16,9 @@ import org.util.npci.api.model.AcquirerConfig;
 import org.util.npci.api.model.BankConfig;
 import org.util.npci.coreconnect.acquirer.AcquirerServer;
 import org.util.npci.coreconnect.acquirer.AcquirerServerBuilder;
+import org.util.npci.coreconnect.interceptor.Interceptor;
+import org.util.npci.coreconnect.interceptor.InterceptorBuilder;
+import org.util.npci.coreconnect.interceptor.InterceptorType;
 import org.util.npci.coreconnect.issuer.IssuerDispatcher;
 import org.util.npci.coreconnect.issuer.IssuerDispatcherBuilder;
 
@@ -35,6 +38,8 @@ public final class CoreConfig extends BankConfig {
 	public final List<AcquirerServer> acquirers;
 	public final CoreConnect          coreconnect;
 	public final HSMConfig            hsmConfig;
+	public final Interceptor          issuerInterceptor;
+	public final Interceptor          acquirerInterceptor;
 
 	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws Exception {
 		super(bankConfig, controller);
@@ -42,16 +47,16 @@ public final class CoreConfig extends BankConfig {
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
 
+		issuerInterceptor   = InterceptorBuilder.getInterceptor(this, InterceptorType.ISSUER, getStringSupressException(PropertyName.ISSUER_INTERCEPTOR));
+		acquirerInterceptor = InterceptorBuilder.getInterceptor(this, InterceptorType.ACQUIRER, getStringSupressException(PropertyName.ACQUIRER_INTERCEPTOR));
+
 		hsmService = HSMService.getService("THALES");
-		if(defaultHSMConfig != null ) {
-			this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port)
-					.withDecimalizationTable(defaultHSMConfig.decTab)
-					.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK)
-					.withMaximumPinLength(defaultHSMConfig.maximumPinLength)
+		if (defaultHSMConfig != null) {
+			this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port).withDecimalizationTable(defaultHSMConfig.decTab)
+					.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK).withMaximumPinLength(defaultHSMConfig.maximumPinLength)
 					.withMinimumPinLength(defaultHSMConfig.minimumPinLength).build();
-		}
-		else this.hsmConfig = null;
-		
+		} else this.hsmConfig = null;
+
 		schedular = new Schedular(this);
 		corelogger.info("schedular initialized : " + schedular);
 		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
@@ -76,7 +81,7 @@ public final class CoreConfig extends BankConfig {
 
 	private final List<AcquirerServer> getAcquirerServerList() throws Exception {
 		final List<AcquirerServer> acquirers = new ArrayList<AcquirerServer>();
-		for (AcquirerConfig acquirerConfig : acquirerConfigs) { acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this)); }
+		for (final AcquirerConfig acquirerConfig : acquirerConfigs) { acquirers.add(AcquirerServerBuilder.getAcquirerServer(acquirerConfig, this)); }
 		return acquirers;
 	}
 

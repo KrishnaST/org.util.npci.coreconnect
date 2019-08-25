@@ -26,8 +26,6 @@ import org.util.npci.coreconnect.logon.Logon;
 import org.util.npci.coreconnect.util.Locker;
 import org.util.npci.coreconnect.util.MACUtil;
 
-
-//@formatter:off
 public final class CoreConnect extends Thread implements ShutDownable {
 
 	private static final ISOFormat npciFormat = NPCIFormat.getInstance();
@@ -35,6 +33,8 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	private final ConcurrentHashMap<String, Locker<ISO8583Message>> tranmap      = new ConcurrentHashMap<>(20);
 	private final AtomicBoolean                                     socketStatus = new AtomicBoolean(false);
 	private final AtomicReference<Status>                           status       = new AtomicReference<Status>(Status.NEW);
+
+	
 
 	private final InetSocketAddress npciAddress;
 	private Socket                  socket;
@@ -44,13 +44,14 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	public final CoreConfig config;
 	public final Logger     logger;
 
-	public CoreConnect(CoreConfig config) {
-		this.config      = config;
-		this.logger      = config.corelogger;
-		this.npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
+	public CoreConnect(final CoreConfig config) {
+		this.config         = config;
+		this.logger         = config.corelogger;
+		this.npciAddress    = new InetSocketAddress(config.npciIp, config.npciPort);
 		setName(config.bankId + "-coreconnect");
 	}
 
+	//@formatter:off
 	public final void run() {
 		setStatus(Status.NEW);
 		while (Status.SHUTDOWN != status.get()) {
@@ -88,7 +89,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		try {
 			final boolean connected = socketStatus.get() ?  true : false;//initSocket();
 			if (connected) {
-				this.logger.trace(config.bankId, "writing : " + ByteHexUtil.byteToHex(bytes));
+				this.logger.trace(config.bankId, "write to npci : " + ByteHexUtil.byteToHex(bytes));
 				os.write(bytes);
 				os.flush();
 				return true;
@@ -104,11 +105,10 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	private final byte[] receive() {
 		if (Status.SHUTDOWN != status.get()) {
-			byte[] bytes = null;
 			try {
-				int b1 = is.read();
+				final int b1 = is.read();
 				this.logger.trace(config.bankId, "b1 : " + b1);
-				int b2 = is.read();
+				final int b2 = is.read();
 				this.logger.trace(config.bankId, "b2 : " + b2);
 				if (b1 < 0 || b2 < 0) {
 					this.logger.debug(config.bankId, "unexpected socket break");
@@ -117,7 +117,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					return null;
 				} else {
 					this.logger.trace("len : " + (b1 * 256 + b2));
-					bytes = new byte[b1 * 256 + b2];
+					final byte[] bytes = new byte[b1 * 256 + b2];
 					is.read(bytes);
 					return bytes;
 				}
@@ -221,6 +221,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	
 	public final ISO8583Message sendRequestToNPCI(final ISO8583Message request, final Logger logger, final int timeoutInMs) {
 		try {
+			config.acquirerInterceptor.applyToRequest(request);
 			if (config.hasMAC && MTI.isMACable(request.get(0), request.get(3))) {
 				final MACResponse macResponse = MACUtil.calculateMAC(config, request.getMAB(), logger);
 				if (macResponse != null && macResponse.isSuccess) request.put(48, TLV.parse(request.get(48)).put("099", macResponse.mac).build());
@@ -232,6 +233,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			final byte[]  bytes  = EncoderDecoder.encode(npciFormat, request);
 			request.putAdditional(PropertyName.NPCI_RAW_REQUEST, bytes);
 			final boolean isSent = send(bytes, logger);
+			logger.info("issent",Boolean.toString(isSent));
+			logger.trace("request bytes", ByteHexUtil.byteToHex(bytes));
+			logger.trace("request ", new ISO8583LogSupplier(request));
 			if (isSent) {
 				logger.info(config.bankId, "waiting started for : " + timeoutInMs);
 				synchronized (locker) {
@@ -245,59 +249,66 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			} else logger.info("npci connectity down while transaction ", request.get(37));
 			tranmap.remove(requestKey);
 			if (locker.response == null) {
+				logger.info("transaction timedout. generating timeout response.");
 				locker.response = request.copy();
 				locker.response.put(0, MTI.getResponseMTI(locker.response.get(0)));
 				locker.response.put(39, ResponseCode.ISSUER_INOPERATIVE);
+				locker.response.putAdditional(PropertyName.IS_STATIC_RESPONSE, true);
+				logger.trace("response received", Boolean.toString(false));
+				logger.info("response ", new ISO8583LogSupplier(locker.response));
 			}
 			else if(config.hasMAC && MTI.isMACable(locker.response.get(0), locker.response.get(3))) {
+				logger.trace("response received", Boolean.toString(true));
+				logger.info("response ", new ISO8583LogSupplier(locker.response));
 				TLV tlv = TLV.parse(locker.response.get(48));
 				MACResponse macResponse = MACUtil.validateMAC(config, locker.response.getMAB(), tlv.get("099"), logger);
 				if(macResponse == null || !macResponse.isSuccess) {
 					logger.error("mac verification failure.changing response code to : "+ResponseCode.MAC_FAILURE_ACQUIRER);
 					locker.response.put(39, ResponseCode.MAC_FAILURE_ACQUIRER);
 				}
+			} else {
+				logger.trace("response received", Boolean.toString(true));
+				logger.info("response ", new ISO8583LogSupplier(locker.response));
 			}
+			config.acquirerInterceptor.applyToResponse(request);
 			return locker.response;
-		} catch (Exception e) {
-			logger.error(e);
-		}
+		} catch (Exception e) {logger.error(e);}
 		final ISO8583Message response = request.copy();
 		response.put(0, MTI.getResponseMTI(response.get(0)));
-		response.put(39, ResponseCode.SYSTEM_MALFUNCTION);
+		response.put(39, ResponseCode.ISSUER_INOPERATIVE);
 		return response;
 	}
 
 	public final boolean sendResponseToAcquirer(final ISO8583Message response) {
 		try {
 			logger.trace(config.bankId, "response_key : " + response.getUniqueKey());
-			Locker<ISO8583Message> locker = tranmap.get(response.getUniqueKey());
+			final Locker<ISO8583Message> locker = tranmap.get(response.getUniqueKey());
 			if (locker == null) {
-				logger.error(config.bankId, "delayed response for transaction : " + response.get(39));
+				logger.error(config.bankId, "delayed response for rrn : " + response.get(37)+" response code : "+response.get(39));
+				logger.trace("delayed response ", ByteHexUtil.byteToHex((byte[]) response.getAdditional(PropertyName.NPCI_RAW_RESPONSE)));
 				return false;
 			}
 			locker.response = response;
-			synchronized (locker) {
-				locker.notify();
-			}
+			synchronized (locker) {locker.notify();}
 			return true;
-		} catch (Exception e) {
-			logger.error(e);
-		}
+		} catch (Exception e) {logger.error(e);}
 		return false;
 	}
 
 	public final boolean sendResponseToNPCI(final ISO8583Message response, final Logger logger) {
 		response.put(0, MTI.getResponseMTI(response.get(0)));
 		try {
+			config.issuerInterceptor.applyToResponse(response);
 			if (config.hasMAC && MTI.isMACable(response.get(0), response.get(3))) {
 				final MACResponse macResponse = MACUtil.calculateMAC(config, response.getMAB(), logger);
 				logger.info("mac response", macResponse.toString());
 				if (macResponse != null && macResponse.isSuccess) response.put(48, TLV.parse(response.get(48)).put("099", macResponse.mac).build());
 				else logger.error("mac calculation failed.");
 			}
-			logger.trace(new ISO8583LogSupplier(response));
-			byte[]        bytes  = EncoderDecoder.encode(npciFormat, response);
+			final byte[] bytes  = EncoderDecoder.encode(npciFormat, response);
 			final boolean isSent = send(bytes, logger);
+			logger.trace("response bytes issent : "+Boolean.toString(isSent), ByteHexUtil.byteToHex(bytes));
+			logger.trace(new ISO8583LogSupplier(response));
 			return isSent;
 		} catch (Exception e) {logger.error(e);}
 		return false;
