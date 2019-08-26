@@ -9,6 +9,7 @@ public interface Interceptor {
 	public InterceptorType type();
 	
 	public void applyToRequest(final ISO8583Message request);
-
+	
 	public void applyToResponse(final ISO8583Message response);
+	
 }

@@ -14,6 +14,6 @@ public abstract class InterceptorBuilder {
 	public static final Interceptor getInterceptor(final CoreConfig config, final InterceptorType type, final String name) {
 		final ServiceLoader<InterceptorBuilder> serviceLoader = ServiceLoader.load(InterceptorBuilder.class, InterceptorBuilder.class.getClassLoader());
 		for(final InterceptorBuilder builder : serviceLoader) {if (builder.names().contains(name)) return builder.build(config); }
-		return new NoOpInterceptor();
+		return new NoOpInterceptor(type);
 	}
 }
