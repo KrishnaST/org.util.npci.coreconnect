@@ -15,7 +15,7 @@ public abstract class KeyExchangeRequest<T extends IssuerDispatcher> extends Iss
 	}
 
 	@Override
-	protected final void execute(Logger logger) {
+	protected final boolean execute(Logger logger) {
 		try {
 			logger.info("key change request from npci.");
 			final String zpk_zmk 	= request.get(48).substring(0, 32);
@@ -32,16 +32,19 @@ public abstract class KeyExchangeRequest<T extends IssuerDispatcher> extends Iss
 			if(response == GenKeyResponse.IO) logger.error("hsm error.");
 			else if(response.isSuccess) {
 				logger.info("key import successfully. kcv match : "+kcv.equalsIgnoreCase(response.kcv));
-				processKey(response.keyUnderLMK);
+				final boolean isProcessed = processKey(response.keyUnderLMK);
+				
+				return isProcessed;
 			}
 			else {
 				logger.info("key import failure : "+response.responseCode);
 			}
 		} catch (Exception e) {logger.error(e);}
+		return false;
 	}
 	
 	public abstract String getZMK();
 	
-	public abstract void processKey(final String zpk);
+	public abstract boolean processKey(final String zpk);
 
 }

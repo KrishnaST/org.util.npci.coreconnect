@@ -12,13 +12,14 @@ public final class UnIdentifiedTransaction extends IssuerTransaction<IssuerDispa
 	}
 
 	@Override
-	protected void execute(final Logger logger) {
+	protected boolean execute(final Logger logger) {
 		try {
 			final TLV DE120 = TLV.parse(request.get(120));
  			logger.info("Request DE120", DE120.toString());
 			request.put(39, IMPSResponseCode.INVALID_TRANSACTION);
-			sendResponseToNPCI(request, IMPSResponseCode.INVALID_TRANSACTION, logger);
+			return sendResponseToNPCI(request, IMPSResponseCode.INVALID_TRANSACTION, logger);
 		} catch (Exception e) {logger.info(e);}
+		return false;
 	}
 
 }
