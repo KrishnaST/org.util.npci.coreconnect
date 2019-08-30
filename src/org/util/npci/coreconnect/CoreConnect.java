@@ -34,8 +34,6 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	private final AtomicBoolean                                     socketStatus = new AtomicBoolean(false);
 	private final AtomicReference<Status>                           status       = new AtomicReference<Status>(Status.NEW);
 
-	
-
 	private final InetSocketAddress npciAddress;
 	private Socket                  socket;
 	private InputStream             is;

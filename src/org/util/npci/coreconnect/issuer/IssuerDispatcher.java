@@ -8,7 +8,7 @@ public abstract class IssuerDispatcher implements ShutDownable {
 
 	public final CoreConfig config;
 
-	public IssuerDispatcher(CoreConfig config) {
+	public IssuerDispatcher(final CoreConfig config) {
 		this.config = config;
 	}
 
