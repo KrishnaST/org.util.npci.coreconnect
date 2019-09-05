@@ -135,7 +135,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			try {
 				logger.info(config.bankId, "connecting to : " + npciAddress);
 				socket = new Socket();
-				socket.connect(npciAddress, 5000);
+				socket.connect(npciAddress, 10000);
 				socket.setKeepAlive(true);
 				socket.setSoTimeout(0);
 				socket.setTcpNoDelay(true);
@@ -147,7 +147,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				return true;
 			} catch (Exception e) {
 				logger.info(config.bankId, e.getMessage());
-				logger.trace(e);
+				//logger.trace(e);
 				return false;
 			}
 		}

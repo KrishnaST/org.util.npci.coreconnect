@@ -7,7 +7,7 @@ import org.util.hsm.api.model.MACResponse;
 import org.util.iso8583.ISO8583LogSupplier;
 import org.util.iso8583.ISO8583Message;
 import org.util.iso8583.npci.MTI;
-import org.util.iso8583.npci.NPCIUtil;
+import org.util.iso8583.npci.ISOUtil;
 import org.util.iso8583.npci.ResponseCode;
 import org.util.nanolog.Logger;
 import org.util.npci.coreconnect.CoreConfig;
@@ -55,7 +55,16 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 	protected final boolean sendResponseToNPCI(final ISO8583Message response, final String responseCode, final Logger logger) {
 		request.put(39, responseCode);
 		if (request.get(39) == null) logger.error(new Exception("empty response code"));
-		NPCIUtil.removeNotRequiredElements(response);
+		ISOUtil.removeNotRequiredElements(response);
+		config.coreDatabaseService.registerResponse(response.getUniqueKey(), response, logger);
+		return config.coreconnect.sendResponseToNPCI(request, logger);
+	}
+	
+	protected final boolean sendResponseToNPCI(final long id, final ISO8583Message response, final String responseCode, final Logger logger) {
+		request.put(39, responseCode);
+		if (request.get(39) == null) logger.error(new Exception("empty response code"));
+		ISOUtil.removeNotRequiredElements(response);
+		config.coreDatabaseService.registerResponse(id, response, logger);
 		return config.coreconnect.sendResponseToNPCI(request, logger);
 	}
 

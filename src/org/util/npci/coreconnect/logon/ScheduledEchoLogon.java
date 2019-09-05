@@ -12,9 +12,8 @@ import org.util.nanolog.Logger;
 import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConfig;
 import org.util.npci.coreconnect.acquirer.NoLogAcquirerTransaction;
-import org.util.npci.coreconnect.internals.Scheduled;
 
-public final class ScheduledEchoLogon extends NoLogAcquirerTransaction implements Scheduled {
+public final class ScheduledEchoLogon extends NoLogAcquirerTransaction {
 
 	public ScheduledEchoLogon(CoreConfig config) {
 		super(config);

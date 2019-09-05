@@ -11,7 +11,7 @@ public class LogonDispatcher extends IssuerDispatcher {
 
 	private final List<String> logonTypes = List.of(LogonType.LOGON, LogonType.ECHO_LOGON, LogonType.LOGOFF);
 
-	public LogonDispatcher(CoreConfig config) {
+	public LogonDispatcher(final CoreConfig config) {
 		super(config);
 
 	}
@@ -22,7 +22,7 @@ public class LogonDispatcher extends IssuerDispatcher {
 	}
 
 	@Override
-	public boolean dispatch(ISO8583Message request) {
+	public boolean dispatch(final ISO8583Message request) {
 		if (MTI.NET_MGMT_REQUEST.equals(request.get(0)) && logonTypes.contains(request.get(70))) {
 			return config.schedular.execute(new IssuerLogon(request, this));
 		}
