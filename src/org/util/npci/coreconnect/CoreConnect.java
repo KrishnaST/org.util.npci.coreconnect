@@ -14,6 +14,7 @@ import org.util.hsm.api.model.MACResponse;
 import org.util.iso8583.EncoderDecoder;
 import org.util.iso8583.ISO8583LogSupplier;
 import org.util.iso8583.ISO8583Message;
+import org.util.iso8583.ISO8583PropertyName;
 import org.util.iso8583.format.ISOFormat;
 import org.util.iso8583.format.NPCIFormat;
 import org.util.iso8583.npci.MTI;
@@ -43,9 +44,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	public final Logger     logger;
 
 	public CoreConnect(final CoreConfig config) {
-		this.config         = config;
-		this.logger         = config.corelogger;
-		this.npciAddress    = new InetSocketAddress(config.npciIp, config.npciPort);
+		this.config      = config;
+		this.logger      = config.corelogger;
+		this.npciAddress = new InetSocketAddress(config.npciIp, config.npciPort);
 		setName(config.bankId + "-coreconnect");
 	}
 
@@ -65,12 +66,12 @@ public final class CoreConnect extends Thread implements ShutDownable {
 					final ISO8583Message message = EncoderDecoder.decode(npciFormat, bytes);
 					if (message == null || message.get(0) == null) continue;
 					if (message.isRequest()) {
-						message.putAdditional(PropertyName.NPCI_RAW_REQUEST, bytes);
+						message.putAdditional(ISO8583PropertyName.RAW_REQUEST, bytes);
 						final boolean dispatched = config.dispatcher.dispatch(message);
 						if(!dispatched) config.schedular.execute(new UnIdentifiedTransaction(message, config.dispatcher));
 					}
 					else {
-						message.putAdditional(PropertyName.NPCI_RAW_RESPONSE, bytes);
+						message.putAdditional(ISO8583PropertyName.RAW_RESPONSE, bytes);
 						sendResponseToAcquirer(message);
 					}
 				} catch (Exception e) {
@@ -229,7 +230,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			final Locker<ISO8583Message> locker = new Locker<>(request);
 			tranmap.put(requestKey, locker);
 			final byte[]  bytes  = EncoderDecoder.encode(npciFormat, request);
-			request.putAdditional(PropertyName.NPCI_RAW_REQUEST, bytes);
+			request.putAdditional(ISO8583PropertyName.RAW_REQUEST, bytes);
 			final boolean isSent = send(bytes, logger);
 			logger.info("issent",Boolean.toString(isSent));
 			logger.trace("request bytes", ByteHexUtil.byteToHex(bytes));
@@ -251,7 +252,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				locker.response = request.copy();
 				locker.response.put(0, MTI.getResponseMTI(locker.response.get(0)));
 				locker.response.put(39, ResponseCode.ISSUER_INOPERATIVE);
-				locker.response.putAdditional(PropertyName.IS_STATIC_RESPONSE, true);
+				locker.response.putAdditional(ISO8583PropertyName.IS_STATIC_RESPONSE, true);
 				logger.trace("response received", Boolean.toString(false));
 				logger.info("response ", new ISO8583LogSupplier(locker.response));
 			}
@@ -283,7 +284,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			final Locker<ISO8583Message> locker = tranmap.get(response.getUniqueKey());
 			if (locker == null) {
 				logger.error(config.bankId, "delayed response for rrn : " + response.get(37)+" response code : "+response.get(39));
-				logger.trace("delayed response ", ByteHexUtil.byteToHex((byte[]) response.getAdditional(PropertyName.NPCI_RAW_RESPONSE)));
+				logger.trace("delayed response ", ByteHexUtil.byteToHex((byte[]) response.getAdditional(ISO8583PropertyName.RAW_RESPONSE)));
 				return false;
 			}
 			locker.response = response;

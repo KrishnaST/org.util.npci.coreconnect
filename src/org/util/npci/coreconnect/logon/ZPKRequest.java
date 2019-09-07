@@ -13,7 +13,7 @@ import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConfig;
 import org.util.npci.coreconnect.acquirer.AcquirerTransaction;
 
-public class ZPKRequest extends AcquirerTransaction {
+public final class ZPKRequest extends AcquirerTransaction {
 
 	public ZPKRequest(CoreConfig config) {
 		super(config);
@@ -22,7 +22,7 @@ public class ZPKRequest extends AcquirerTransaction {
 	private final Random random = new Random();
 
 	@Override
-	protected void execute(Logger logger) {
+	protected final void execute(Logger logger) {
 		try {
 			final Date     date    = new Date();
 			ISO8583Message request = new ISO8583Message();

@@ -3,6 +3,7 @@ package org.util.npci.coreconnect.acquirer;
 import org.util.nanolog.Logger;
 import org.util.npci.coreconnect.CoreConfig;
 
+//@formatter:off
 public abstract class NoLogAcquirerTransaction implements Runnable {
 
 	protected final CoreConfig config;
@@ -20,9 +21,7 @@ public abstract class NoLogAcquirerTransaction implements Runnable {
 			final Logger logger = Logger.CONSOLE;
 			logger.info("acquirer class ", getClass().getName());
 			execute(logger);
-		} catch (final Exception e) {
-			config.corelogger.error(e);
-		}
+		} catch (final Exception e) {config.corelogger.error(e);}
 		Thread.currentThread().setName("");
 	}
 

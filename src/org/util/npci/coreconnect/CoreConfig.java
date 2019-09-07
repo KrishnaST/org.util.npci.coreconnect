@@ -19,8 +19,6 @@ import org.util.npci.coreconnect.acquirer.AcquirerServerBuilder;
 import org.util.npci.coreconnect.interceptor.Interceptor;
 import org.util.npci.coreconnect.interceptor.InterceptorBuilder;
 import org.util.npci.coreconnect.interceptor.InterceptorType;
-import org.util.npci.coreconnect.internals.CoreDatabaseServiceImpl;
-import org.util.npci.coreconnect.internals.NoOpCoreDatabaseService;
 import org.util.npci.coreconnect.issuer.IssuerDispatcher;
 import org.util.npci.coreconnect.issuer.IssuerDispatcherBuilder;
 
@@ -42,7 +40,7 @@ public final class CoreConfig extends BankConfig {
 	public final HSMConfig            hsmConfig;
 	public final Interceptor          issuerInterceptor;
 	public final Interceptor          acquirerInterceptor;
-	public final CoreDatabaseService  coreDatabaseService;
+	//public final CoreDatabaseService  coreDatabaseService;
 
 	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws Exception {
 		super(bankConfig, controller);
@@ -50,8 +48,8 @@ public final class CoreConfig extends BankConfig {
 		acqWriter  = new LogWriter(bankConfig.bankId, "acquirer_tx", true);
 		corelogger = Logger.getLogger(LoggerType.INSTANT, new LogWriter(bankConfig.bankId, "coreconnect", true));
 
-		issuerInterceptor   = InterceptorBuilder.getInterceptor(this, InterceptorType.ISSUER, getStringSupressException(PropertyName.ISSUER_INTERCEPTOR));
-		acquirerInterceptor = InterceptorBuilder.getInterceptor(this, InterceptorType.ACQUIRER, getStringSupressException(PropertyName.ACQUIRER_INTERCEPTOR));
+		issuerInterceptor   = InterceptorBuilder.getInterceptor(this, InterceptorType.ISSUER, getStringSupressException(CorePropertyName.ISSUER_INTERCEPTOR));
+		acquirerInterceptor = InterceptorBuilder.getInterceptor(this, InterceptorType.ACQUIRER, getStringSupressException(CorePropertyName.ACQUIRER_INTERCEPTOR));
 
 		hsmService = HSMService.getService("THALES");
 		if (defaultHSMConfig != null) {
@@ -77,8 +75,8 @@ public final class CoreConfig extends BankConfig {
 			corelogger.info("acquirers initialized : " + acquirers.stream().map(acquirer -> acquirer.acquirerConfig.acquirerName).collect(Collectors.toList()));
 		} else acquirers = List.of();
 
-		coreDatabaseService = getBooleanSupressException(PropertyName.CORE_DATABASE_SERVICE) ? new CoreDatabaseServiceImpl(this) : new NoOpCoreDatabaseService();
-		corelogger.info("core database service is initialized : " + coreDatabaseService);
+		//coreDatabaseService = getBooleanSupressException(CorePropertyName.IS_CORE_DATABASE_SERVICE_ENABLED) ? new CoreDatabaseServiceImpl(this) : new NoOpCoreDatabaseService();
+		//corelogger.info("core database service is initialized : " + coreDatabaseService);
 		coreconnect = new CoreConnect(this);
 		corelogger.info("coreconnect initialized : " + coreconnect);
 

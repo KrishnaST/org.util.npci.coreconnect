@@ -56,16 +56,6 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 		request.put(39, responseCode);
 		if (request.get(39) == null) logger.error(new Exception("empty response code"));
 		ISOUtil.removeNotRequiredElements(response);
-		config.coreDatabaseService.registerResponse(response.getUniqueKey(), response, logger);
 		return config.coreconnect.sendResponseToNPCI(request, logger);
 	}
-	
-	protected final boolean sendResponseToNPCI(final long id, final ISO8583Message response, final String responseCode, final Logger logger) {
-		request.put(39, responseCode);
-		if (request.get(39) == null) logger.error(new Exception("empty response code"));
-		ISOUtil.removeNotRequiredElements(response);
-		config.coreDatabaseService.registerResponse(id, response, logger);
-		return config.coreconnect.sendResponseToNPCI(request, logger);
-	}
-
 }
