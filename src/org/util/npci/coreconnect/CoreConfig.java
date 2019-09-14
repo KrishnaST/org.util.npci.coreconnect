@@ -40,7 +40,6 @@ public final class CoreConfig extends BankConfig {
 	public final HSMConfig            hsmConfig;
 	public final Interceptor          issuerInterceptor;
 	public final Interceptor          acquirerInterceptor;
-	//public final CoreDatabaseService  coreDatabaseService;
 
 	public CoreConfig(final BankConfig bankConfig, final BankController controller) throws Exception {
 		super(bankConfig, controller);
@@ -50,18 +49,22 @@ public final class CoreConfig extends BankConfig {
 
 		issuerInterceptor   = InterceptorBuilder.getInterceptor(this, InterceptorType.ISSUER, getStringSupressException(CorePropertyName.ISSUER_INTERCEPTOR));
 		acquirerInterceptor = InterceptorBuilder.getInterceptor(this, InterceptorType.ACQUIRER, getStringSupressException(CorePropertyName.ACQUIRER_INTERCEPTOR));
-
+		corelogger.info("defaultHSMConfig  : " + defaultHSMConfig);
 		hsmService = HSMService.getService("THALES");
 		if (defaultHSMConfig != null) {
-			this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port).withDecimalizationTable(defaultHSMConfig.decTab)
-					.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK).withMaximumPinLength(defaultHSMConfig.maximumPinLength)
+			this.hsmConfig = HSMConfig.newBuilder(defaultHSMConfig.host, defaultHSMConfig.port)
+					.withDecimalizationTable(defaultHSMConfig.decTab)
+					.withLengthOfPinLMK(defaultHSMConfig.lengthOfPinLMK)
+					.withMaximumPinLength(defaultHSMConfig.maximumPinLength)
 					.withMinimumPinLength(defaultHSMConfig.minimumPinLength).build();
 		} else this.hsmConfig = null;
 
+		corelogger.info("hsmConfig  : " + hsmConfig);
+		corelogger.info("hsm service initialized : " + hsmService);
+		
 		schedular = new Schedular(this);
 		corelogger.info("schedular initialized : " + schedular);
-		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
-		corelogger.info("dispatcher initialized : " + dispatcher.getName());
+		
 		if (!this.dbProperties.isEmpty()) {
 			this.dbProperties.put("poolName", "hikari-datasource-" + bankId);
 			dataSource = new HikariDataSource(new HikariConfig(this.dbProperties));
@@ -70,16 +73,17 @@ public final class CoreConfig extends BankConfig {
 			dataSource = null;
 			corelogger.info("dataSource not initialized : " + dataSource);
 		}
+		
+		coreconnect = new CoreConnect(this);
+		corelogger.info("coreconnect initialized : " + coreconnect);
+		
 		if (bankConfig.isAcquirer) {
 			acquirers = getAcquirerServerList();
 			corelogger.info("acquirers initialized : " + acquirers.stream().map(acquirer -> acquirer.acquirerConfig.acquirerName).collect(Collectors.toList()));
 		} else acquirers = List.of();
 
-		//coreDatabaseService = getBooleanSupressException(CorePropertyName.IS_CORE_DATABASE_SERVICE_ENABLED) ? new CoreDatabaseServiceImpl(this) : new NoOpCoreDatabaseService();
-		//corelogger.info("core database service is initialized : " + coreDatabaseService);
-		coreconnect = new CoreConnect(this);
-		corelogger.info("coreconnect initialized : " + coreconnect);
-
+		dispatcher = IssuerDispatcherBuilder.getIssuerDispatcher(this);
+		corelogger.info("dispatcher initialized : " + dispatcher.getName());
 	}
 
 	private final List<AcquirerServer> getAcquirerServerList() throws Exception {

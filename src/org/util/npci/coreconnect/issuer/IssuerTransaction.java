@@ -7,11 +7,11 @@ import org.util.hsm.api.model.MACResponse;
 import org.util.iso8583.ISO8583LogSupplier;
 import org.util.iso8583.ISO8583Message;
 import org.util.iso8583.npci.MTI;
-import org.util.iso8583.npci.NPCIISOUtil;
 import org.util.iso8583.npci.ResponseCode;
 import org.util.nanolog.Logger;
 import org.util.npci.coreconnect.CoreConfig;
 import org.util.npci.coreconnect.util.MACUtil;
+import org.util.npci.coreconnect.util.NPCIISOUtil;
 
 public abstract class IssuerTransaction<T extends IssuerDispatcher> implements Runnable {
 
