@@ -46,10 +46,7 @@ public abstract class IssuerTransaction<T extends IssuerDispatcher> implements R
 					else sendResponseToNPCI(request, ResponseCode.MAC_FAILURE_ISSUER, logger);
 				} else sendResponseToNPCI(request, ResponseCode.MAC_FAILURE_ISSUER, logger);
 			} else execute(logger);
-		} catch (final Exception e) {
-			config.corelogger.error(e);
-		}
-		Thread.currentThread().setName("");
+		} catch (final Exception e) {config.corelogger.error(e);}
 	}
 
 	protected final boolean sendResponseToNPCI(final ISO8583Message response, final String responseCode, final Logger logger) {

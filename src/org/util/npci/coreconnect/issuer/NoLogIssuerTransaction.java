@@ -29,7 +29,6 @@ public abstract class NoLogIssuerTransaction<T extends IssuerDispatcher> impleme
 			logger.trace("issuer request ", new ISO8583LogSupplier(request));
 			execute(logger);
 		} catch (final Exception e) {config.corelogger.error(e);}
-		Thread.currentThread().setName("");
 	}
 	
 	protected final boolean sendResponseToNPCI(final ISO8583Message response, final String responseCode, final Logger logger) {

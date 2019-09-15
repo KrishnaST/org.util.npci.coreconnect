@@ -217,43 +217,13 @@ public abstract class CoreDatabaseService {
 		return null;
 	}
 
-	public final boolean registerResponse(final long id, final ISO8583Message response, final Logger logger) {
+	public boolean registerResponse(final long id, final ISO8583Message response, final Logger logger) {
 		if (isdisabled || id == 0 || Strings.isNullOrEmpty(txTableName)) return false;
 		try(final Connection con = config.dataSource.getConnection();
 				final PreparedStatement ps = con.prepareStatement("UPDATE " + txTableName + " SET R039 = ?, R038 = ?, RXTIME = GETDATE() WHERE TXID = ?")) {
 			ps.setString(1, response.get(39));
 			ps.setString(2, response.get(38));
 			ps.setLong(3, id);
-			return ps.executeUpdate() > 0;
-		} catch (final Exception e) {
-			logger.error(e);
-		}
-		return false;
-	}
-	
-	public final boolean registerResponseWithAccount(final long id, final ISO8583Message response, final Logger logger) {
-		if (isdisabled || id == 0 || Strings.isNullOrEmpty(txTableName)) return false;
-		try(final Connection con = config.dataSource.getConnection();
-			final PreparedStatement ps = con.prepareStatement("UPDATE " + txTableName + " SET R039 = ?, R038 = ?, F102 = ?, RXTIME = GETDATE() WHERE TXID = ?")) {
-			ps.setString(1, response.get(39));
-			ps.setString(2, response.get(38));
-			ps.setString(3, response.get(102));
-			ps.setLong(4, id);
-			return ps.executeUpdate() > 0;
-		} catch (final Exception e) {
-			logger.error(e);
-		}
-		return false;
-	}
-
-	public final boolean registerResponseWithAccount(final String key, final ISO8583Message response, final Logger logger) {
-		if (isdisabled || key == null || Strings.isNullOrEmpty(txTableName)) return false;
-		try(final Connection con = config.dataSource.getConnection();
-			final PreparedStatement ps = con.prepareStatement("UPDATE " + txTableName + " SET R039 = ?, R038 = ?, F102 = ?, RXTIME = GETDATE() WHERE MKEY = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', ?), 2)")) {
-			ps.setString(1, response.get(39));
-			ps.setString(2, response.get(38));
-			ps.setString(3, response.get(102));
-			ps.setString(4, key);
 			return ps.executeUpdate() > 0;
 		} catch (final Exception e) {
 			logger.error(e);

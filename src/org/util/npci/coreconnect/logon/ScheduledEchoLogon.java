@@ -22,7 +22,9 @@ public final class ScheduledEchoLogon extends NoLogAcquirerTransaction {
 	private final Random random = new Random();
 
 	@Override
-	protected void execute(Logger logger) {
+	protected final void execute(final Logger logger) {
+		final String oldName = Thread.currentThread().getName();
+		Thread.currentThread().setName("scheduled-logon");
 		try {
 			final Date date = new Date();
 			ISO8583Message request = new ISO8583Message();
@@ -37,6 +39,8 @@ public final class ScheduledEchoLogon extends NoLogAcquirerTransaction {
 			else config.coreconnect.setStatus(Status.NEW);
 		} catch (Exception e) {
 			logger.info(e);
+		} finally {
+			Thread.currentThread().setName(oldName == null ? "" : oldName);
 		}
 	}
 

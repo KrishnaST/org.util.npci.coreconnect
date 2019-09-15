@@ -17,18 +17,17 @@ public final class CustomThreadFactory implements ThreadFactory {
 	//@formatter:off
 	@Override
 	public final Thread newThread(Runnable runnable) {
-		/*if(runnable instanceof Scheduled) return new Thread(runnable, getName(prefix, "sch", counter.getAndIncrement()));
-		else if (runnable instanceof AcquirerTransaction || runnable instanceof NoLogAcquirerTransaction) return new Thread(runnable, getName(prefix, "acq", counter.getAndIncrement()));
-		else if (runnable instanceof IssuerTransaction || runnable instanceof NoLogIssuerTransaction) return new Thread(runnable, getName(prefix, "iss", counter.getAndIncrement()));
-		else */
-			
-		return new Thread(runnable, getName(prefix, "gen", counter.getAndIncrement()));
+		return new Thread(runnable, getName(prefix, counter.getAndIncrement()));
 	}
 
+	@SuppressWarnings("unused")
 	private static final String getName(final String prefix, final String type, final int count) {
 		return prefix + "-" + type + "-" + count;
 	}
-
+	
+	private static final String getName(final String prefix, final int count) {
+		return prefix + "-" + count;
+	}
 	
 	public final String getPrefix() {
 		return prefix;

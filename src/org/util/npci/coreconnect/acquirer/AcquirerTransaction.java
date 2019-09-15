@@ -20,13 +20,11 @@ public abstract class AcquirerTransaction implements Runnable {
 	@Override
 	public void run() {
 		try(final Logger logger = config.getAcquirerLogger()) {
-			Thread.currentThread().setName(config.bankId + "-iss-" + counter.getAndIncrement());
+			Thread.currentThread().setName(config.bankId + "-acq-" + counter.getAndIncrement());
 			logger.info("acquirer class ", getClass().getName());
 			execute(logger);
 			Thread.currentThread().setName("");
-		} catch (final Exception e) {
-			config.corelogger.error(e);
-		}
+		} catch (final Exception e) {config.corelogger.error(e);}
 	}
 
 }

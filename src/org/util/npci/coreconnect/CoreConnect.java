@@ -52,6 +52,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 
 	//@formatter:off
 	public final void run() {
+		Thread.currentThread().setName(config.bankId+"-coreconnect");
 		setStatus(Status.NEW);
 		while (Status.SHUTDOWN != status.get()) {
 			try {

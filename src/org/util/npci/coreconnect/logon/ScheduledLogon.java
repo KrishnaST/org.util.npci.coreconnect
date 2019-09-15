@@ -13,6 +13,7 @@ import org.util.npci.api.Status;
 import org.util.npci.coreconnect.CoreConfig;
 import org.util.npci.coreconnect.acquirer.NoLogAcquirerTransaction;
 
+//@formatter:off
 public final class ScheduledLogon extends NoLogAcquirerTransaction  {
 
 	public ScheduledLogon(CoreConfig config) {
@@ -22,10 +23,12 @@ public final class ScheduledLogon extends NoLogAcquirerTransaction  {
 	private final Random random = new Random();
 
 	@Override
-	protected void execute(Logger logger) {
+	protected final void execute(final Logger logger) {
+		final String oldName = Thread.currentThread().getName();
+		Thread.currentThread().setName("scheduled-echo");
 		try {
 			final Date date = new Date();
-			ISO8583Message request = new ISO8583Message();
+			final ISO8583Message request = new ISO8583Message();
 			request.put(0, MTI.NET_MGMT_REQUEST);
 			request.put(7, ISO8583DateField.getISODate(ISO8583DateField.TRANSMISSION, date));
 			request.put(11, String.format("%06d", random.nextInt(999999)));
@@ -35,9 +38,8 @@ public final class ScheduledLogon extends NoLogAcquirerTransaction  {
 			logger.info("logon response rcvd : " + EncoderDecoder.log(response));
 			if (response != null && "00".equals(response.get(39)) && Status.SHUTDOWN != config.coreconnect.getStatus()) config.coreconnect.setStatus(Status.LOGGEDON);
 			else config.coreconnect.setStatus(Status.NEW);
-		} catch (Exception e) {
-			logger.info(e);
-		}
+		} catch (Exception e) {logger.info(e);} 
+		finally {Thread.currentThread().setName(oldName == null ? "" : oldName);}
 	}
 
 }
