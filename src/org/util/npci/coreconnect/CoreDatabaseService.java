@@ -1,5 +1,6 @@
 package org.util.npci.coreconnect;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.util.datautil.Strings;
+import org.util.datautil.db.ResultSetBuilder;
 import org.util.iso8583.ISO8583Message;
 import org.util.iso8583.ISO8583PropertyName;
 import org.util.nanolog.Logger;
@@ -16,44 +18,42 @@ import org.util.nanolog.Logger;
 public abstract class CoreDatabaseService {
 
 	protected final CoreConfig config;
-	protected final String     txTableName;
+	protected final String     TX_TABLE_NAME;
 	protected final boolean    encrypted;
 	protected final boolean    isdisabled;
 
+	private static final String DECRYPT_PAN = " CONVERT(VARCHAR, DECRYPTBYKEY(E002, 1, SUBSTRING(F002, (DATALENGTH(F002)-3), 4))) ";
+	private static final String HASHBYTES   = " CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', ?), 2) ";
+
 	public CoreDatabaseService(final CoreConfig config) {
 		this.config      = config;
-		this.txTableName = config.txTableName;
+		this.TX_TABLE_NAME = config.txTableName;
 		this.encrypted   = config.getBooleanSupressException(CorePropertyName.PAN_ENCRYPTED);
 		this.isdisabled  = config.getBooleanSupressException(CorePropertyName.IS_CORE_DATABASE_SERVICE_DISABLED);
 	}
 
 	public final long registerTransaction(final ISO8583Message message, final String type, final Logger logger) {
-		if (isdisabled || message == null || Strings.isNullOrEmpty(txTableName)) return 0;
+		if (isdisabled || message == null || Strings.isNullOrEmpty(TX_TABLE_NAME)) return 0;
+		final String query = "INSERT INTO " + TX_TABLE_NAME + " (MKEY, TKEY, F000, F002, E002, F003, F004, F007, F011, F012, F013, F014, F015, F016, F018, F019, "
+				+ "F022, F023, F025, F032, F033, F037, F038, F039, F040, F041, F042, F043, F044, F048, F049, "
+				+ "F054, F060, F061, F070, F090, F095, F102, F103, F104, F105, F120, FXTIME, RXTIME, BANKCD) " + "VALUES (" + HASHBYTES + "," + HASHBYTES
+				+ ",?, ?, ENCRYPTBYKEY(key_guid('sk_card'), ?, 1, ?), ?, "
+				+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + "?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), ?)";
 		try(final Connection con = config.dataSource.getConnection();
-				final PreparedStatement ps = con.prepareStatement(
-						"INSERT INTO " + txTableName + " (" + "MKEY, TKEY, F000, F002, E002, F003, F004, F007, F011, F012, F013, F014, F015, F016, F018, F019, "
-								+ "F022, F023, F025, F032, F033, F037, F038, F039, F040, F041, F042, F043, F044, F048, F049, "
-								+ "F054, F060, F061, F070, F090, F095, F102, F103, F104, F105, F120, FXTIME, RXTIME) "
-								+ "VALUES (CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', ?), 2) ,CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', ?), 2) , "
-								+ "?, ?, ENCRYPTBYKEY(key_guid('sk_card'), ?, 1, ?), ?, "
-								+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-								+ "?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())",
-						Statement.RETURN_GENERATED_KEYS)) {
-			ps.setString(1, message.getUniqueKey());
-			ps.setString(2, message.getTransactionKey());
+			final PreparedStatement ps = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+			ps.setBytes(1, message.getUniqueKey().getBytes(StandardCharsets.US_ASCII));
+			ps.setBytes(2, message.getTransactionKey().getBytes(StandardCharsets.US_ASCII));
 			ps.setString(3, message.get(0));
 			final String pan = message.get(2);
-			if(pan == null) {
+			if (pan == null) {
 				ps.setString(4, null);
 				ps.setBytes(5, null);
 				ps.setBytes(6, null);
-			}
-			else if(encrypted) {
+			} else if (encrypted) {
 				ps.setString(4, mask(pan));
 				ps.setBytes(5, pan.getBytes());
 				ps.setBytes(6, getLast4Chars(pan).getBytes());
-			}
-			else {
+			} else {
 				ps.setString(4, pan);
 				ps.setBytes(5, pan.getBytes());
 				ps.setBytes(6, getLast4Chars(pan).getBytes());
@@ -95,6 +95,7 @@ public abstract class CoreDatabaseService {
 			ps.setString(41, message.get(104));
 			ps.setString(42, message.get(105));
 			ps.setString(43, message.get(120));
+			ps.setString(44, config.bankId);
 			if (ps.executeUpdate() > 0) {
 				try(ResultSet rs = ps.getGeneratedKeys()) {
 					if (rs.next()) {
@@ -109,12 +110,10 @@ public abstract class CoreDatabaseService {
 	}
 
 	public final ISO8583Message getTransactionById(final long id, final Logger logger) {
-		if (isdisabled || id == 0 || Strings.isNullOrEmpty(txTableName)) return null;
+		if (isdisabled || id == 0 || Strings.isNullOrEmpty(TX_TABLE_NAME)) return null;
 		try(final Connection con = config.dataSource.getConnection();
-				final PreparedStatement ps = con
-						.prepareStatement("SELECT CONVERT(VARCHAR, DECRYPTBYKEY(E002, 1, SUBSTRING(F002, (DATALENGTH(F002)-4), 4))) AS PAN, * FROM "
-								+ txTableName + " WHERE TXID = " + id);
-				final ResultSet rs = ps.executeQuery()) {
+			final PreparedStatement ps = con.prepareStatement("SELECT" + DECRYPT_PAN + "AS PAN, * FROM " + TX_TABLE_NAME + " WHERE TXID = " + id);
+			final ResultSet rs = ps.executeQuery()) {
 			if (rs.next()) {
 				final ISO8583Message transaction = new ISO8583Message();
 				transaction.put(0, rs.getString("F000"));
@@ -155,21 +154,19 @@ public abstract class CoreDatabaseService {
 				transaction.put(103, rs.getString("F103"));
 				transaction.put(104, rs.getString("F104"));
 				transaction.put(120, rs.getString("F120"));
+				transaction.putAdditional(ISO8583PropertyName.TRANSACTION_ID, rs.getLong("TXID"));
+				transaction.putAdditional(ISO8583PropertyName.IS_REVERSED, rs.getBoolean("IS_REVERSED"));
 				return transaction;
 			}
-		} catch (final Exception e) {
-			logger.error(e);
-		}
+		} catch (final Exception e) {logger.error(e);}
 		return null;
 	}
 
 	public final ISO8583Message getTransactionByMKey(final String mkey, final Logger logger) {
-		if (isdisabled || mkey == null || Strings.isNullOrEmpty(txTableName)) return null;
+		if (isdisabled || mkey == null || Strings.isNullOrEmpty(TX_TABLE_NAME)) return null;
 		try(final Connection con = config.dataSource.getConnection();
-			final PreparedStatement ps = con
-						.prepareStatement("SELECT CONVERT(VARCHAR, DECRYPTBYKEY(E002, 1, SUBSTRING(F002, (DATALENGTH(F002)-4), 4))) AS PAN, * FROM "
-								+ txTableName + " WHERE MKEY = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', '" + mkey + "'), 2)");
-			final ResultSet rs = ps.executeQuery()) {
+			final PreparedStatement ps = con.prepareStatement("SELECT" + DECRYPT_PAN + "AS PAN, * FROM " + TX_TABLE_NAME + " WHERE MKEY = " + HASHBYTES);
+			final ResultSet rs = ResultSetBuilder.getResultSet(ps, mkey.getBytes(StandardCharsets.US_ASCII))) {
 			if (rs.next()) {
 				final ISO8583Message transaction = new ISO8583Message();
 				transaction.put(0, rs.getString("F000"));
@@ -210,22 +207,21 @@ public abstract class CoreDatabaseService {
 				transaction.put(103, rs.getString("F103"));
 				transaction.put(104, rs.getString("F104"));
 				transaction.put(120, rs.getString("F120"));
+				transaction.putAdditional(ISO8583PropertyName.TRANSACTION_ID, rs.getLong("TXID"));
+				transaction.putAdditional(ISO8583PropertyName.IS_REVERSED, rs.getBoolean("IS_REVERSED"));
 				return transaction;
 			}
-		} catch (final Exception e) {
-			logger.error(e);
-		}
+		} catch (final Exception e) {logger.error(e);}
 		return null;
 	}
-	
+
 	public final List<ISO8583Message> getTransactionsByTKey(final String tkey, final Logger logger) {
-		if (isdisabled || tkey == null || Strings.isNullOrEmpty(txTableName)) return null;
-		final String query = "SELECT CONVERT(VARCHAR, DECRYPTBYKEY(E002, 1, SUBSTRING(F002, (DATALENGTH(F002)-4), 4))) AS PAN, * FROM "
-				+ txTableName + " WHERE TKEY = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', '" + tkey + "'), 2)";
+		if (isdisabled || tkey == null || Strings.isNullOrEmpty(TX_TABLE_NAME)) return null;
+		final String               query        = "SELECT" + DECRYPT_PAN + "AS PAN, * FROM " + TX_TABLE_NAME + " WHERE TKEY =" + HASHBYTES;
 		final List<ISO8583Message> transactions = new ArrayList<ISO8583Message>();
 		try(final Connection con = config.dataSource.getConnection();
 			final PreparedStatement ps = con.prepareStatement(query);
-			final ResultSet rs = ps.executeQuery()) {
+			final ResultSet rs = ResultSetBuilder.getResultSet(ps, tkey.getBytes(StandardCharsets.US_ASCII))) {
 			while (rs.next()) {
 				final ISO8583Message transaction = new ISO8583Message();
 				transaction.put(0, rs.getString("F000"));
@@ -266,20 +262,22 @@ public abstract class CoreDatabaseService {
 				transaction.put(103, rs.getString("F103"));
 				transaction.put(104, rs.getString("F104"));
 				transaction.put(120, rs.getString("F120"));
+				transaction.putAdditional(ISO8583PropertyName.TRANSACTION_ID, rs.getLong("TXID"));
+				transaction.putAdditional(ISO8583PropertyName.IS_REVERSED, rs.getBoolean("IS_REVERSED"));
 				transactions.add(transaction);
 			}
 		} catch (final Exception e) {logger.error(e);}
 		return transactions;
 	}
-	
+
 	public final ISO8583Message getTransactionByTKey(final String mti, final String tkey, final Logger logger) {
-		if (isdisabled || tkey == null || Strings.isNullOrEmpty(txTableName)) return null;
-		final String query = "SELECT CONVERT(VARCHAR, DECRYPTBYKEY(E002, 1, SUBSTRING(F002, (DATALENGTH(F002)-4), 4))) AS PAN, * FROM "
-				+ txTableName + " WHERE F000 = "+mti+" AND TKEY = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', '" + tkey + "'), 2)";
+		if (isdisabled || tkey == null || Strings.isNullOrEmpty(TX_TABLE_NAME)) return null;
+		final String query = "SELECT" + DECRYPT_PAN + "AS PAN, * FROM " + TX_TABLE_NAME + " WHERE F000 = ? AND TKEY =" + HASHBYTES;
+		logger.trace("getTransactionByTKey", query);
 		try(final Connection con = config.dataSource.getConnection();
 			final PreparedStatement ps = con.prepareStatement(query);
-			final ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
+			final ResultSet rs = ResultSetBuilder.getResultSet(ps, mti, tkey.getBytes(StandardCharsets.US_ASCII))) {
+			if (rs.next()) {
 				final ISO8583Message transaction = new ISO8583Message();
 				transaction.put(0, rs.getString("F000"));
 				transaction.put(2, encrypted ? rs.getString("PAN") : rs.getString("F002"));
@@ -319,6 +317,8 @@ public abstract class CoreDatabaseService {
 				transaction.put(103, rs.getString("F103"));
 				transaction.put(104, rs.getString("F104"));
 				transaction.put(120, rs.getString("F120"));
+				transaction.putAdditional(ISO8583PropertyName.TRANSACTION_ID, rs.getLong("TXID"));
+				transaction.putAdditional(ISO8583PropertyName.IS_REVERSED, rs.getBoolean("IS_REVERSED"));
 				return transaction;
 			}
 		} catch (final Exception e) {logger.error(e);}
@@ -326,9 +326,9 @@ public abstract class CoreDatabaseService {
 	}
 
 	public final boolean registerResponse(final long id, final ISO8583Message response, final Logger logger) {
-		if (isdisabled || id == 0 || Strings.isNullOrEmpty(txTableName)) return false;
+		if (isdisabled || id == 0 || Strings.isNullOrEmpty(TX_TABLE_NAME)) return false;
 		try(final Connection con = config.dataSource.getConnection();
-			final PreparedStatement ps = con.prepareStatement("UPDATE " + txTableName + " SET R039 = ?, R038 = ?, RXTIME = GETDATE() WHERE TXID = ?")) {
+			final PreparedStatement ps = con.prepareStatement("UPDATE " + TX_TABLE_NAME + " SET R039 = ?, R038 = ?, RXTIME = GETDATE() WHERE TXID = ?")) {
 			ps.setString(1, response.get(39));
 			ps.setString(2, response.get(38));
 			ps.setLong(3, id);
@@ -336,14 +336,24 @@ public abstract class CoreDatabaseService {
 		} catch (final Exception e) {logger.error(e);}
 		return false;
 	}
+	
+	public final boolean setReversalStatus(final long id, final boolean status, final Logger logger) {
+		if (isdisabled || id == 0 || Strings.isNullOrEmpty(TX_TABLE_NAME)) return false;
+		try(final Connection con = config.dataSource.getConnection();
+			final PreparedStatement ps = con.prepareStatement("UPDATE " + TX_TABLE_NAME + " SET IS_REVERSED = ? WHERE TXID = ?")) {
+			ps.setBoolean(1, status);
+			ps.setLong(2, id);
+			return ps.executeUpdate() > 0;
+		} catch (final Exception e) {logger.error(e);}
+		return false;
+	}
 
-	public final boolean isDuplicateTransaction(final String key, final Logger logger) {
-		if (isdisabled || key == null || Strings.isNullOrEmpty(txTableName)) return false;
-		final String query = "SELECT CASE WHEN EXISTS (SELECT TXID FROM " + txTableName + " WITH (NOLOCK) WHERE MKEY = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', '"
-						+ key + "'), 2)) THEN CAST (1 AS BIT)ELSE CAST (0 AS BIT) END AS EXIST";
+	public final boolean isDuplicateTransaction(final String mkey, final Logger logger) {
+		if (isdisabled || mkey == null || Strings.isNullOrEmpty(TX_TABLE_NAME)) return false;
+		final String query = "SELECT CASE WHEN EXISTS (SELECT TXID FROM " + TX_TABLE_NAME	+ " WITH (NOLOCK) WHERE MKEY ="+HASHBYTES+" THEN CAST (1 AS BIT)ELSE CAST (0 AS BIT) END AS EXIST";
 		try(final Connection con = config.dataSource.getConnection();
 			final PreparedStatement ps = con.prepareStatement(query);
-				final ResultSet rs = ps.executeQuery()) {
+			final ResultSet rs = ResultSetBuilder.getResultSet(ps, mkey.getBytes(StandardCharsets.US_ASCII))) {
 			if (rs.next()) return rs.getBoolean("EXIST");
 		} catch (final Exception e) {logger.error(e);}
 		return false;
