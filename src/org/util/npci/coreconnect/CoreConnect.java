@@ -56,9 +56,9 @@ public final class CoreConnect extends Thread implements ShutDownable {
 		setStatus(Status.NEW);
 		while (Status.SHUTDOWN != status.get()) {
 			try {
-				boolean isNPCISocketConnected = socketStatus.get() ? true : initSocket();
-				if (!isNPCISocketConnected) logger.info("unable to connect to npci : " + config.bankId + " status : " + status.get());
-				if (!isNPCISocketConnected) { continue; }
+				boolean isconnected = socketStatus.get() ? true : initSocket();
+				if (!isconnected) logger.info("unable to connect to npci : " + config.bankId + " status : " + status.get());
+				if (!isconnected) { continue; }
 				logger.info(config.bankId, "connected and reading from npci : ");
 				final byte[] bytes = receive();
 				logger.trace(config.bankId, "read from npci : " + ByteHexUtil.byteToHex(bytes));
@@ -106,11 +106,11 @@ public final class CoreConnect extends Thread implements ShutDownable {
 	private final byte[] receive() {
 		if (Status.SHUTDOWN != status.get()) {
 			try {
-				final int b1 = is.read();
+				final int b1 = is.read() & 0xFF;
 				this.logger.trace(config.bankId, "b1 : " + b1);
-				final int b2 = is.read();
+				final int b2 = is.read() & 0xFF;
 				this.logger.trace(config.bankId, "b2 : " + b2);
-				if (b1 < 0 || b2 < 0) {
+				if (b1 == 255 && b2 == 255) {
 					this.logger.debug(config.bankId, "unexpected socket break");
 					socketStatus.set(false);
 					if (Status.LOGGEDON == status.get()) setStatus(Status.NEW);
@@ -139,7 +139,6 @@ public final class CoreConnect extends Thread implements ShutDownable {
 				socket = new Socket();
 				socket.connect(npciAddress, 10000);
 				socket.setKeepAlive(true);
-				socket.setSoTimeout(0);
 				socket.setTcpNoDelay(true);
 				is = socket.getInputStream();
 				os = socket.getOutputStream();
@@ -164,9 +163,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			socket = null;
 			os     = null;
 			is     = null;
-		} catch (Exception e) {
-			logger.info(e);
-		}
+		} catch (Exception e) {logger.info(e);}
 	}
 
 	private static final void closeQuietly(AutoCloseable closeable) {
@@ -181,9 +178,7 @@ public final class CoreConnect extends Thread implements ShutDownable {
 			setStatus(Status.SHUTDOWN);
 			closeSocket();
 			return true;
-		} catch (Exception e) {
-			logger.info(e);
-		}
+		} catch (Exception e) {logger.info(e);}
 		return false;
 	}
 
